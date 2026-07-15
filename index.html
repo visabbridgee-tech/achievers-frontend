@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Achievers Academy — Management System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:#f0f4f8;}
+::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-thumb{background:#c0ccd8;border-radius:3px;}
+table{border-collapse:collapse;width:100%;}
+input,select,button,textarea{font-family:inherit;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>window.LOGO_URL="data:image/png;base64,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";</script>
+<script type="text/babel">
+const {useState,useEffect}=React;
+const LOGO=window.LOGO_URL;
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS_SHORT=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const CLASSES=["Class 1","Class 2","Class 3","Class 4","Class 5","Class 6","Class 7","Class 8","Class 9","Class 10","O-Level","IGCSE","A-Level","AS-Level","A2-Level","FSc Pre-Med","FSc Pre-Eng","FA"];
+const now=new Date();
+const CY=now.getFullYear();
+const CM=now.getMonth();
+const CD=now.getDate();
+
+function gid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function fmt(n){return Number(n||0).toLocaleString();}
+function pad(n,l=4){return String(n).padStart(l,'0');}
+function loadLS(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function saveLS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+const C={
+  navy:"#0f2744",navyLight:"#1e4976",gold:"#c8952a",goldLight:"#f0b429",
+  white:"#ffffff",bg:"#f0f4f8",card:"#ffffff",border:"#d0dce8",
+  text:"#1a2740",textMid:"#4a5568",textLight:"#7a8ba0",
+  green:"#1a7a42",greenBg:"#e6f4ec",red:"#b02020",redBg:"#fde8e8",
+  yellow:"#b07000",yellowBg:"#fff4e0",blue:"#1a4fa0",blueBg:"#e8f0fb",
+};
+
+const S={
+  card:{background:C.card,borderRadius:12,padding:"20px 24px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)",marginBottom:16},
+  label:{fontSize:"0.72rem",fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:5},
+  input:{width:"100%",padding:"10px 13px",border:`2px solid ${C.border}`,borderRadius:8,fontSize:"0.9rem",outline:"none",boxSizing:"border-box",color:C.text},
+  select:{width:"100%",padding:"10px 13px",border:`2px solid ${C.border}`,borderRadius:8,fontSize:"0.9rem",outline:"none",boxSizing:"border-box",color:C.text,background:C.white},
+  btnPrimary:{background:C.navy,color:C.white,border:"none",borderRadius:9,padding:"11px 20px",fontWeight:700,cursor:"pointer",fontSize:"0.88rem"},
+  btnGold:{background:C.gold,color:C.white,border:"none",borderRadius:9,padding:"11px 20px",fontWeight:700,cursor:"pointer",fontSize:"0.88rem"},
+  btnGreen:{background:C.green,color:C.white,border:"none",borderRadius:9,padding:"11px 20px",fontWeight:700,cursor:"pointer",fontSize:"0.88rem"},
+  btnDanger:{background:C.redBg,color:C.red,border:`1px solid ${C.red}`,borderRadius:9,padding:"11px 20px",fontWeight:700,cursor:"pointer",fontSize:"0.88rem"},
+  btnGhost:{background:C.bg,color:C.text,border:`1px solid ${C.border}`,borderRadius:9,padding:"11px 20px",fontWeight:600,cursor:"pointer",fontSize:"0.88rem"},
+  badge:(color,bg)=>({background:bg,color,padding:"3px 10px",borderRadius:20,fontSize:"0.72rem",fontWeight:700,display:"inline-block"}),
+  th:{padding:"11px 14px",textAlign:"left",fontSize:"0.72rem",fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.05em",background:C.bg,borderBottom:`2px solid ${C.border}`},
+  td:{padding:"12px 14px",fontSize:"0.87rem",color:C.text,borderBottom:`1px solid ${C.border}`},
+};
+
+// ── DEFAULT DATA ──────────────────────────────────────────────────────────────
+const DEF_SETTINGS={
+  academyName:"Achievers Academy",address:"Abbottabad, KPK, Pakistan",
+  phone:"0300-0000000",email:"info@achieversacademy.pk",
+  iban:"PK76UNIL0109000259812272",accountTitle:"Khawar Asif",bankName:"United Bank Limited",
+  dueDateDay:6,lateFeeAmount:2000,autoSendDay:1,lateMinutes:15,
+  twilioSID:"",twilioToken:"",twilioFrom:"",zktIP:"",zktPort:"4370",challanCounter:930,
+};
+
+const DEF_USERS=[
+  {id:"su",name:"Super Admin",username:"superadmin",password:"Academy@2024",role:"superadmin",
+   permissions:{students:true,fees:true,attendance:true,challans:true,teachers:true,reports:true,users:true,settings:true},active:true},
+];
+
+const INIT_TEACHERS=[
+  {id:gid(),name:"Muhammad Asif",phone:"0300-1111111",cnic:"13101-1234567-1",subjects:["Mathematics","Physics"],commissionType:"percentage",commissionValue:30,active:true},
+  {id:gid(),name:"Dr. Ayesha Noor",phone:"0321-2222222",cnic:"13101-7654321-2",subjects:["Biology","Chemistry"],commissionType:"fixed",commissionValue:1500,active:true},
+];
+
+function buildFees(student,existing={}){
+  const fees={...existing};
+  const ey=parseInt(student.enrollYear),em=parseInt(student.enrollMonth);
+  const totalFee=student.subjects.reduce((a,s)=>a+(parseInt(s.fee)||0),0);
+  for(let y=ey;y<=CY;y++){
+    const s=y===ey?em:0,e=y===CY?CM:11;
+    for(let m=s;m<=e;m++){
+      if(y===ey&&m===em) continue;
+      const k=`${y}-${m}`;
+      if(!fees[k]) fees[k]={year:y,month:m,totalFee,paid:0,discount:0,status:"unpaid",paidDate:null,challanNo:0};
+    }
+  }
+  return fees;
+}
+
+const INIT_STUDENTS=[
+  {id:gid(),name:"Abdullah Khan Baloch",fatherName:"Khan Baloch",phone:"0300-1234567",parentWP:"03001234567",
+   class:"FSc Pre-Med",enrollYear:CY,enrollMonth:Math.max(0,CM-1),
+   subjects:[{subject:"Chemistry",fee:8000,discount:0,teacherId:INIT_TEACHERS[1].id},{subject:"Physics",fee:8000,discount:0,teacherId:INIT_TEACHERS[0].id},{subject:"Mathematics",fee:8000,discount:0,teacherId:INIT_TEACHERS[0].id},{subject:"Biology",fee:8000,discount:0,teacherId:INIT_TEACHERS[1].id}],
+   fees:{},active:true,regFee:5000},
+  {id:gid(),name:"Ahmed Ali",fatherName:"Muhammad Ali",phone:"0311-1234567",parentWP:"03111234567",
+   class:"Class 9",enrollYear:CY,enrollMonth:Math.max(0,CM-1),
+   subjects:[{subject:"Mathematics",fee:3000,discount:500,teacherId:INIT_TEACHERS[0].id},{subject:"Physics",fee:2500,discount:0,teacherId:INIT_TEACHERS[0].id}],
+   fees:{},active:true,regFee:0},
+];
+INIT_STUDENTS.forEach(s=>{s.fees=buildFees(s);});
+
+const ALL_PERMS=["students","fees","attendance","challans","teachers","reports","users","settings"];
+
+const NAV=[
+  {id:"dashboard",label:"Dashboard",perm:null},
+  {id:"students",label:"Students",perm:"students"},
+  {id:"teachers",label:"Teachers",perm:"teachers"},
+  {id:"fees",label:"Fees & Payments",perm:"fees"},
+  {id:"challans",label:"Challans",perm:"challans"},
+  {id:"attendance",label:"Attendance",perm:"attendance"},
+  {id:"reports",label:"Reports",perm:"reports"},
+  {id:"users",label:"User Management",perm:"users"},
+  {id:"settings",label:"Settings",perm:"settings"},
+];
+
+// ── SHARED ────────────────────────────────────────────────────────────────────
+function Badge({status}){
+  const map={paid:[C.green,C.greenBg,"Paid"],partial:[C.yellow,C.yellowBg,"Partial"],unpaid:[C.red,C.redBg,"Unpaid"],
+    present:[C.green,C.greenBg,"Present"],absent:[C.red,C.redBg,"Absent"],leave:[C.yellow,C.yellowBg,"Leave"],late:[C.yellow,C.yellowBg,"Late"]};
+  const[color,bg,label]=map[status]||[C.textMid,C.bg,status];
+  return <span style={S.badge(color,bg)}>{label}</span>;
+}
+function Toast({toast}){
+  if(!toast) return null;
+  return <div style={{position:"fixed",bottom:28,left:"50%",transform:"translateX(-50%)",background:toast.type==="error"?C.red:C.navy,color:C.white,padding:"12px 24px",borderRadius:30,fontWeight:700,fontSize:"0.87rem",boxShadow:"0 4px 24px rgba(0,0,0,0.25)",zIndex:9999,border:`2px solid ${toast.type==="error"?"#ff6b6b":C.gold}`,whiteSpace:"nowrap"}}>{toast.msg}</div>;
+}
+function Modal({title,onClose,children,width=560}){
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
+    <div style={{background:C.white,borderRadius:16,width:"100%",maxWidth:width,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"20px 24px",borderBottom:`1px solid ${C.border}`,position:"sticky",top:0,background:C.white,zIndex:1}}>
+        <div style={{fontWeight:800,fontSize:"1rem",color:C.navy}}>{title}</div>
+        <button onClick={onClose} style={{background:C.bg,border:"none",borderRadius:8,width:32,height:32,cursor:"pointer",fontWeight:700,color:C.textMid,fontSize:"1.1rem"}}>×</button>
+      </div>
+      <div style={{padding:"20px 24px"}}>{children}</div>
+    </div>
+  </div>;
+}
+function Field({label,children,mb=14}){return <div style={{marginBottom:mb}}><label style={S.label}>{label}</label>{children}</div>;}
+function G2({children,gap=12}){return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap,marginBottom:14}}>{children}</div>;}
+function SecTitle({title}){return <div style={{fontWeight:800,color:C.navy,marginBottom:14,fontSize:"0.9rem",borderBottom:`2px solid ${C.gold}`,paddingBottom:10}}>{title}</div>;}
+
+// ── CHALLAN PRINT ─────────────────────────────────────────────────────────────
+
+function printChallan(student, fee, feeKey, settings, teachers) {
+  const [y, m] = feeKey.split("-").map(Number);
+  const bal = fee.totalFee - fee.discount - fee.paid;
+  const prevDue = Object.entries(student.fees)
+    .filter(([k]) => k !== feeKey)
+    .reduce((a, [, f]) => a + Math.max(0, f.totalFee - f.discount - f.paid), 0);
+  const totalPayable = bal + prevDue + (fee.lateFee || 0);
+  const afterDue = totalPayable + (settings.lateFeeAmount || 0);
+  const dueDate = `${settings.dueDateDay} ${MONTHS[m]} ${y}`;
+
+  const subRows = student.subjects.map(sub => {
+    const t = teachers.find(x => x.id === sub.teacherId);
+    return `<tr>
+      <td style="padding:3px 6px;border-bottom:1px solid #eee;font-size:0.7rem;">${sub.subject}</td>
+      <td style="padding:3px 6px;border-bottom:1px solid #eee;font-size:0.68rem;color:#555;">${t ? t.name : "-"}</td>
+      <td style="padding:3px 6px;border-bottom:1px solid #eee;text-align:right;font-size:0.7rem;">Rs.${fmt(sub.fee)}</td>
+      <td style="padding:3px 6px;border-bottom:1px solid #eee;text-align:right;font-size:0.7rem;color:green;">${parseInt(sub.discount) > 0 ? `Rs.${fmt(sub.discount)}` : "—"}</td>
+    </tr>`;
+  }).join("");
+
+  const copy = (title) => `
+  <div style="width:32%;display:inline-block;vertical-align:top;border:1.5px solid #0f2744;border-radius:6px;overflow:hidden;margin:0 0.5%;page-break-inside:avoid;">
+    <div style="background:#0f2744;color:white;padding:7px 10px;text-align:center;">
+      <img src="${LOGO}" style="height:36px;display:block;margin:0 auto 3px;"/>
+      <div style="font-size:0.78rem;font-weight:900;letter-spacing:0.5px;">${settings.academyName.toUpperCase()}</div>
+      <div style="font-size:0.55rem;opacity:0.7;margin-top:1px;letter-spacing:1.5px;">FEE CHALLAN — ${title}</div>
+    </div>
+    <div style="padding:7px 9px;font-size:0.72rem;">
+      <div style="display:flex;justify-content:space-between;background:#f5f5f5;padding:4px 7px;border-radius:3px;margin-bottom:6px;">
+        <div><div style="font-size:0.55rem;color:#888;font-weight:700;">CHALLAN NO.</div><div style="font-weight:900;font-family:monospace;font-size:0.85rem;">${pad(fee.challanNo || settings.challanCounter || 930)}</div></div>
+        <div style="text-align:right;"><div style="font-size:0.55rem;color:#888;font-weight:700;">MONTH</div><div style="font-weight:800;font-size:0.75rem;">${MONTHS[m]} ${y}</div></div>
+      </div>
+      <table style="width:100%;font-size:0.68rem;margin-bottom:6px;">
+        ${[["Name", student.name], ["Father", student.fatherName], ["Class", student.class], ["Phone", student.phone]].map(([l, v]) => `<tr><td style="color:#888;padding:1px 0;width:35%">${l}</td><td style="font-weight:700;padding:1px 0;">${v}</td></tr>`).join("")}
+      </table>
+      <div style="font-size:0.58rem;font-weight:700;color:#0f2744;margin-bottom:3px;text-transform:uppercase;">Subject Details</div>
+      <table style="width:100%;border:1px solid #ddd;border-radius:3px;overflow:hidden;margin-bottom:6px;">
+        <thead><tr style="background:#f5f5f5;">
+          <th style="padding:3px 6px;text-align:left;font-size:0.62rem;">Subject</th>
+          <th style="padding:3px 6px;text-align:center;font-size:0.62rem;">Teacher</th>
+          <th style="padding:3px 6px;text-align:right;font-size:0.62rem;">Fee</th>
+          <th style="padding:3px 6px;text-align:right;font-size:0.62rem;">Disc.</th>
+        </tr></thead>
+        <tbody>${subRows}</tbody>
+      </table>
+      <table style="width:100%;font-size:0.7rem;margin-bottom:6px;">
+        ${[
+          ["Candidate Fee", `Rs. ${fmt(fee.totalFee)}`],
+          fee.discount > 0 ? ["Discount", `- Rs. ${fmt(fee.discount)}`] : null,
+          student.regFee > 0 ? ["Arrears (Reg.Fee)", `Rs. ${fmt(student.regFee)}`] : null,
+          prevDue > 0 ? ["Previous Balance", `Rs. ${fmt(prevDue)}`] : null,
+          (fee.lateFee || 0) > 0 ? ["Late Fee", `Rs. ${fmt(fee.lateFee)}`] : null,
+        ].filter(Boolean).map(([l, v]) => `<tr><td style="padding:1px 0;color:#555;">${l}</td><td style="text-align:right;font-weight:700;padding:1px 0;">${v}</td></tr>`).join("")}
+      </table>
+      <div style="background:#0f2744;color:white;padding:6px 8px;border-radius:3px;display:flex;justify-content:space-between;font-weight:900;font-size:0.78rem;margin-bottom:4px;">
+        <span>Total Payable</span><span>Rs. ${fmt(totalPayable)}</span>
+      </div>
+      <div style="font-size:0.58rem;color:#b02020;font-weight:700;">Due: ${dueDate}</div>
+      <div style="font-size:0.58rem;color:#555;">Late Fee: Rs. ${fmt(settings.lateFeeAmount)} | After Due: Rs. ${fmt(afterDue)}</div>
+      <div style="background:#f5f5f5;padding:5px 7px;border-radius:3px;font-size:0.6rem;margin-top:4px;">
+        <div style="font-weight:700;color:#0f2744;">${settings.bankName || "Bank"}</div>
+        <div>Acc: ${settings.accountTitle}</div>
+        <div style="font-family:monospace;font-size:0.58rem;">IBAN: ${settings.iban}</div>
+      </div>
+      <div style="margin-top:4px;font-size:0.58rem;color:#888;border-top:1px dashed #ccc;padding-top:3px;">MUST submit Academy & Teacher copy of paid challan.</div>
+      <div style="margin-top:5px;font-size:0.62rem;color:#555;border-top:1px solid #eee;padding-top:4px;">Fee Received: ___________</div>
+    </div>
+  </div>`;
+
+  const win = window.open("", "_blank");
+  win.document.write(`<!DOCTYPE html><html><head><title>Fee Challan #${pad(fee.challanNo || 930)}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:"Segoe UI",sans-serif;padding:10px;background:white;}
+    .header-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #0f2744;}
+    .print-btn{background:#0f2744;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:0.85rem;font-weight:700;}
+    @media print{
+      .no-print{display:none!important;}
+      body{padding:4px;}
+      @page{size:A4 landscape;margin:8mm;}
+    }
+  </style></head><body>
+  <div class="no-print header-bar">
+    <span style="font-weight:700;color:#0f2744;">${settings.academyName} — Challan #${pad(fee.challanNo || 930)} — ${MONTHS[m]} ${y}</span>
+    <button class="print-btn" onclick="window.print()">Print 3 Copies</button>
+  </div>
+  <div style="white-space:nowrap;">
+    ${copy("ACADEMY COPY")}${copy("TEACHER COPY")}${copy("PARENTS COPY")}
+  </div>
+  </body></html>`);
+  win.document.close();
+}
+
+
+// ── TEACHER SALARY SLIP PRINT ─────────────────────────────────────────────────
+
+function printSalarySlip(teacher, month, year, students, teacherAtt, settings) {
+  const assigned = students.filter(s => s.active && s.subjects.some(x => x.teacherId === teacher.id));
+  const revenue = assigned.reduce((a, s) => a + s.subjects.filter(x => x.teacherId === teacher.id).reduce((b, x) => b + (parseInt(x.fee) || 0), 0), 0);
+  const commission = teacher.commissionType === "percentage"
+    ? Math.round(revenue * (teacher.commissionValue / 100))
+    : assigned.length * (parseInt(teacher.commissionValue) || 0);
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const attRows = [];
+  let presentCount = 0, lateCount = 0, absentCount = 0, leaveCount = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(year, month, d);
+    if (date > new Date()) break;
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const key = `${dateStr}-${teacher.id}`;
+    const rec = teacherAtt[key];
+    const dayName = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][date.getDay()];
+    const isSun = date.getDay() === 0;
+    let status = isSun ? "Holiday" : "—", color = "#bbb", bg = isSun ? "#f9f9f9" : "white";
+    if (rec) {
+      if (rec.status === "present") { status = "Present"; color = "#1a7a42"; bg = "#f0faf4"; presentCount++; }
+      else if (rec.status === "late") { status = "LATE"; color = "#b07000"; bg = "#fffbf0"; lateCount++; }
+      else if (rec.status === "absent") { status = "Absent"; color = "#b02020"; bg = "#fff5f5"; absentCount++; }
+      else if (rec.status === "leave") { status = "Leave"; color = "#555"; bg = "#f5f5f5"; leaveCount++; }
+    }
+    attRows.push(`<tr style="background:${bg};">
+      <td style="padding:3px 8px;font-size:0.72rem;color:#444;border-bottom:1px solid #f0f0f0;text-align:center;">${d}</td>
+      <td style="padding:3px 8px;font-size:0.72rem;color:#666;border-bottom:1px solid #f0f0f0;">${dayName}</td>
+      <td style="padding:3px 8px;font-size:0.72rem;font-weight:700;color:${color};border-bottom:1px solid #f0f0f0;">${status}${rec?.status === "late" ? ` <span style="font-size:0.62rem;color:#b07000;">(${rec.time || ""})</span>` : ""}</td>
+    </tr>`);
+  }
+
+  const win = window.open("", "_blank");
+  win.document.write(`<!DOCTYPE html><html><head><title>Salary Slip — ${teacher.name} — ${MONTHS[month]} ${year}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:"Segoe UI",sans-serif;background:white;color:#1a2740;}
+    .print-btn{background:#0f2744;color:white;border:none;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:0.88rem;font-weight:700;}
+    @media print{.no-print{display:none!important;}@page{size:A4;margin:10mm;}}
+  </style></head><body>
+  <div class="no-print" style="padding:12px 20px;background:#f0f4f8;border-bottom:2px solid #0f2744;display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-weight:700;color:#0f2744;font-size:0.9rem;">${teacher.name} — Salary Slip — ${MONTHS[month]} ${year}</span>
+    <button class="print-btn" onclick="window.print()">Print Salary Slip</button>
+  </div>
+
+  <!-- Header -->
+  <div style="background:#0f2744;color:white;padding:16px 24px;display:flex;align-items:center;gap:16px;">
+    <img src="${LOGO}" style="height:52px;"/>
+    <div style="flex:1;">
+      <div style="font-size:1.1rem;font-weight:900;letter-spacing:1px;">${settings.academyName.toUpperCase()}</div>
+      <div style="opacity:0.6;font-size:0.72rem;margin-top:2px;">TEACHER SALARY SLIP</div>
+      <div style="opacity:0.6;font-size:0.7rem;">${settings.address} | ${settings.phone}</div>
+    </div>
+    <div style="text-align:right;background:rgba(255,255,255,0.1);padding:10px 16px;border-radius:8px;">
+      <div style="font-size:0.62rem;opacity:0.7;text-transform:uppercase;letter-spacing:1px;">Month</div>
+      <div style="font-size:1rem;font-weight:900;">${MONTHS[month]} ${year}</div>
+    </div>
+  </div>
+
+  <div style="padding:18px 24px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <!-- Teacher Info -->
+      <div style="border:1.5px solid #d0dce8;border-radius:8px;overflow:hidden;">
+        <div style="background:#0f2744;color:white;padding:8px 12px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Teacher Information</div>
+        <div style="padding:10px 12px;">
+          ${[["Name", teacher.name], ["Phone", teacher.phone], ["CNIC", teacher.cnic || "—"], ["Subjects", teacher.subjects.join(", ")], ["Commission", teacher.commissionType === "percentage" ? `${teacher.commissionValue}% of revenue` : `Rs. ${fmt(teacher.commissionValue)} per student`]]
+            .map(([l, v]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #eee;font-size:0.8rem;"><span style="color:#7a8ba0;">${l}</span><span style="font-weight:700;">${v}</span></div>`).join("")}
+        </div>
+      </div>
+
+      <!-- Earnings -->
+      <div style="border:1.5px solid #d0dce8;border-radius:8px;overflow:hidden;">
+        <div style="background:#0f2744;color:white;padding:8px 12px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Earnings — ${MONTHS[month]} ${year}</div>
+        <div style="padding:10px 12px;">
+          ${[["Total Students Assigned", assigned.length], ["Total Revenue Generated", `Rs. ${fmt(revenue)}`], ["Commission Rate", teacher.commissionType === "percentage" ? `${teacher.commissionValue}%` : `Rs. ${fmt(teacher.commissionValue)}/student`]]
+            .map(([l, v]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #eee;font-size:0.8rem;"><span style="color:#7a8ba0;">${l}</span><span style="font-weight:700;">${v}</span></div>`).join("")}
+          <div style="background:#0f2744;color:white;padding:10px 12px;border-radius:6px;display:flex;justify-content:space-between;font-weight:900;font-size:0.95rem;margin-top:10px;">
+            <span>Net Commission</span><span>Rs. ${fmt(commission)}</span>
+          </div>
+          <div style="font-size:0.65rem;color:#7a8ba0;margin-top:6px;text-align:center;">No salary deduction — attendance record only</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Students Assigned -->
+    <div style="border:1.5px solid #d0dce8;border-radius:8px;overflow:hidden;margin-bottom:16px;">
+      <div style="background:#0f2744;color:white;padding:8px 12px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Students Assigned This Month (${assigned.length})</div>
+      <div style="padding:10px 12px;">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+          ${assigned.map(s => {
+            const subs = s.subjects.filter(x => x.teacherId === teacher.id);
+            return `<div style="background:#f0f4f8;padding:6px 10px;border-radius:6px;font-size:0.75rem;border-left:3px solid #0f2744;">
+              <div style="font-weight:700;">${s.name}</div>
+              <div style="color:#7a8ba0;font-size:0.68rem;">${subs.map(x => `${x.subject} (Rs.${fmt(x.fee)})`).join(", ")}</div>
+            </div>`;
+          }).join("") || "<div style='color:#7a8ba0;font-size:0.82rem;padding:6px;'>No students assigned</div>"}
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance -->
+    <div style="border:1.5px solid #d0dce8;border-radius:8px;overflow:hidden;">
+      <div style="background:#0f2744;color:white;padding:8px 12px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Attendance Record — ${MONTHS[month]} ${year}</div>
+      <div style="padding:12px;">
+        <!-- Summary -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+          ${[["Present", presentCount, "#1a7a42", "#e6f4ec"], ["Late", lateCount, "#b07000", "#fff4e0"], ["Absent", absentCount, "#b02020", "#fde8e8"], ["Leave", leaveCount, "#555", "#f0f0f0"]]
+            .map(([l, v, c, bg]) => `<div style="background:${bg};border-radius:7px;padding:8px 12px;text-align:center;border:1.5px solid ${c};">
+              <div style="font-size:0.62rem;color:${c};font-weight:700;text-transform:uppercase;">${l}</div>
+              <div style="font-size:1.4rem;font-weight:900;color:${c};">${v}</div>
+            </div>`).join("")}
+        </div>
+        <!-- Day by Day -->
+        <table style="width:100%;border:1px solid #e0e8f0;border-radius:6px;overflow:hidden;">
+          <thead><tr style="background:#0f2744;color:white;">
+            <th style="padding:6px 8px;text-align:center;font-size:0.7rem;width:50px;">Day</th>
+            <th style="padding:6px 8px;text-align:left;font-size:0.7rem;width:60px;">Weekday</th>
+            <th style="padding:6px 8px;text-align:left;font-size:0.7rem;">Status</th>
+          </tr></thead>
+          <tbody>${attRows.join("")}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Signatures -->
+    <div style="display:flex;justify-content:space-between;margin-top:24px;padding-top:16px;border-top:2px solid #d0dce8;">
+      <div style="text-align:center;min-width:160px;">
+        <div style="border-top:1.5px solid #333;padding-top:6px;margin-top:36px;font-size:0.75rem;color:#555;">Teacher Signature</div>
+        <div style="font-size:0.7rem;color:#7a8ba0;">${teacher.name}</div>
+      </div>
+      <div style="text-align:center;min-width:160px;">
+        <div style="border-top:1.5px solid #333;padding-top:6px;margin-top:36px;font-size:0.75rem;color:#555;">Academy Administration</div>
+        <div style="font-size:0.7rem;color:#7a8ba0;">${settings.academyName}</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;text-align:center;font-size:0.65rem;color:#aaa;">${settings.academyName} — ${settings.address} — ${settings.phone}</div>
+  </div>
+  </body></html>`);
+  win.document.close();
+}
+
+
+function App(){
+  const[auth,setAuth]=useState(false);
+  const[currentUser,setCurrentUser]=useState(null);
+  const[tab,setTab]=useState("dashboard");
+  const[sidebarOpen,setSidebarOpen]=useState(false);
+  const[toast,setToast]=useState(null);
+  const[modal,setModal]=useState(null);
+  const[lf,setLf]=useState({u:"",p:""});
+  const[le,setLe]=useState("");
+
+  const[users,setUsers]=useState(()=>loadLS("aa_users",DEF_USERS));
+  const[students,setStudents]=useState(()=>loadLS("aa_students",INIT_STUDENTS));
+  const[teachers,setTeachers]=useState(()=>loadLS("aa_teachers",INIT_TEACHERS));
+  const[attendance,setAttendance]=useState(()=>loadLS("aa_att",{}));
+  const[teacherAtt,setTeacherAtt]=useState(()=>loadLS("aa_tatt",{}));
+  const[classTimings,setClassTimings]=useState(()=>loadLS("aa_timings",[
+    {id:gid(),class:"FSc Pre-Med",shift:"Morning",startTime:"08:00",endTime:"10:00"},
+    {id:gid(),class:"Class 9",shift:"Evening",startTime:"16:00",endTime:"18:00"},
+  ]));
+  const[settings,setSettings]=useState(()=>loadLS("aa_settings",DEF_SETTINGS));
+  const[wpLog,setWpLog]=useState(()=>loadLS("aa_wplog",[]));
+
+  useEffect(()=>saveLS("aa_users",users),[users]);
+  useEffect(()=>saveLS("aa_students",students),[students]);
+  useEffect(()=>saveLS("aa_teachers",teachers),[teachers]);
+  useEffect(()=>saveLS("aa_att",attendance),[attendance]);
+  useEffect(()=>saveLS("aa_tatt",teacherAtt),[teacherAtt]);
+  useEffect(()=>saveLS("aa_timings",classTimings),[classTimings]);
+  useEffect(()=>saveLS("aa_settings",settings),[settings]);
+  useEffect(()=>saveLS("aa_wplog",wpLog),[wpLog]);
+
+  function showToast(msg,type="ok"){setToast({msg,type});setTimeout(()=>setToast(null),3000);}
+  function canAccess(perm){if(!currentUser) return false;if(currentUser.role==="superadmin") return true;if(!perm) return true;return currentUser.permissions?.[perm]===true;}
+  function login(){const u=users.find(x=>x.username===lf.u&&x.password===lf.p&&x.active);if(u){setCurrentUser(u);setAuth(true);setLe("");}else setLe("Invalid username or password.");}
+  function logout(){setAuth(false);setCurrentUser(null);setTab("dashboard");}
+
+  if(!auth) return(
+    <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${C.navy} 0%,${C.navyLight} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{width:"100%",maxWidth:420}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <img src={LOGO} style={{height:80,marginBottom:10}}/>
+          <div style={{fontSize:"1.6rem",fontWeight:900,color:C.white,letterSpacing:1}}>ACHIEVERS ACADEMY</div>
+          <div style={{color:"rgba(255,255,255,0.5)",fontSize:"0.8rem",marginTop:4,letterSpacing:2,textTransform:"uppercase"}}>Management System</div>
+        </div>
+        <div style={{background:C.white,borderRadius:18,padding:32,boxShadow:"0 24px 64px rgba(0,0,0,0.4)"}}>
+          <div style={{fontWeight:800,fontSize:"1rem",marginBottom:24,color:C.navy,borderBottom:`2px solid ${C.gold}`,paddingBottom:12}}>Staff Login</div>
+          <Field label="Username"><input value={lf.u} onChange={e=>setLf({...lf,u:e.target.value})} onKeyDown={e=>e.key==="Enter"&&login()} style={S.input} placeholder="Enter username"/></Field>
+          <Field label="Password"><input type="password" value={lf.p} onChange={e=>setLf({...lf,p:e.target.value})} onKeyDown={e=>e.key==="Enter"&&login()} style={S.input} placeholder="Enter password"/></Field>
+          {le&&<div style={{background:C.redBg,color:C.red,padding:"10px 14px",borderRadius:8,fontSize:"0.83rem",fontWeight:600,marginBottom:16}}>{le}</div>}
+          <button onClick={login} style={{...S.btnPrimary,width:"100%",padding:14,fontSize:"0.95rem"}}>Sign In</button>
+          <div style={{marginTop:20,padding:"12px 14px",background:C.bg,borderRadius:9,fontSize:"0.78rem",color:C.textLight,borderLeft:`3px solid ${C.gold}`}}>
+            <strong style={{color:C.navy}}>Default:</strong> superadmin / Academy@2024<br/>
+            <span style={{fontSize:"0.72rem"}}>Change password after first login</span>
+          </div>
+        </div>
+      </div>
+      <Toast toast={toast}/>
+    </div>
+  );
+
+  return(
+    <div style={{fontFamily:"Segoe UI,system-ui,sans-serif",background:C.bg,minHeight:"100vh",display:"flex"}}>
+      <div style={{width:230,background:C.navy,minHeight:"100vh",display:"flex",flexDirection:"column",position:"fixed",left:sidebarOpen?0:-230,top:0,bottom:0,zIndex:200,transition:"left 0.25s",boxShadow:"4px 0 20px rgba(0,0,0,0.2)"}}>
+        <div style={{padding:"18px 16px 12px",borderBottom:"1px solid rgba(255,255,255,0.08)",textAlign:"center"}}>
+          <img src={LOGO} style={{height:44,marginBottom:6}}/>
+          <div style={{color:C.white,fontWeight:800,fontSize:"0.85rem"}}>Achievers Academy</div>
+          <div style={{color:"rgba(255,255,255,0.4)",fontSize:"0.65rem"}}>Management System</div>
+        </div>
+        <nav style={{flex:1,padding:"10px 8px",overflowY:"auto"}}>
+          {NAV.filter(n=>!n.perm||canAccess(n.perm)).map(n=>(
+            <button key={n.id} onClick={()=>{setTab(n.id);setSidebarOpen(false);}}
+              style={{display:"flex",alignItems:"center",width:"100%",padding:"10px 12px",background:tab===n.id?"rgba(200,149,42,0.15)":"transparent",border:tab===n.id?"1px solid rgba(200,149,42,0.3)":"1px solid transparent",borderRadius:9,color:tab===n.id?C.goldLight:"rgba(255,255,255,0.65)",fontWeight:tab===n.id?700:500,cursor:"pointer",fontSize:"0.85rem",textAlign:"left",marginBottom:3,fontFamily:"inherit"}}>
+              {n.label}
+            </button>
+          ))}
+        </nav>
+        <div style={{padding:"12px 14px",borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{color:"rgba(255,255,255,0.5)",fontSize:"0.68rem",marginBottom:3,textTransform:"uppercase"}}>Logged in as</div>
+          <div style={{color:C.white,fontWeight:700,fontSize:"0.85rem",marginBottom:8}}>{currentUser.name}</div>
+          <div style={{display:"flex",gap:5}}>
+            <button onClick={()=>setModal("cp")} style={{flex:1,background:"rgba(255,255,255,0.08)",border:"none",borderRadius:7,padding:"6px 0",color:"rgba(255,255,255,0.7)",fontSize:"0.72rem",cursor:"pointer",fontFamily:"inherit"}}>Change Pass</button>
+            <button onClick={logout} style={{flex:1,background:"rgba(176,32,32,0.2)",border:"1px solid rgba(176,32,32,0.4)",borderRadius:7,padding:"6px 0",color:"#ff9999",fontSize:"0.72rem",cursor:"pointer",fontFamily:"inherit"}}>Logout</button>
+          </div>
+        </div>
+      </div>
+
+      {sidebarOpen&&<div onClick={()=>setSidebarOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:199}}/>}
+
+      <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:"100vh"}}>
+        <div style={{background:C.white,borderBottom:`1px solid ${C.border}`,padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <button onClick={()=>setSidebarOpen(true)} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,width:36,height:36,cursor:"pointer",fontSize:"1.1rem",color:C.text}}>☰</button>
+            <div>
+              <div style={{fontWeight:800,fontSize:"1rem",color:C.navy}}>{NAV.find(n=>n.id===tab)?.label||"Dashboard"}</div>
+              <div style={{fontSize:"0.7rem",color:C.textLight}}>{settings.academyName} — {new Date().toLocaleDateString("en-PK",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div>
+            </div>
+          </div>
+          <div style={{background:C.navy,color:C.white,padding:"6px 14px",borderRadius:20,fontSize:"0.75rem",fontWeight:700}}>
+            {currentUser.role==="superadmin"?"Super Admin":currentUser.role} — {currentUser.name}
+          </div>
+        </div>
+
+        <div style={{flex:1,padding:"20px",maxWidth:1300,width:"100%",margin:"0 auto",boxSizing:"border-box"}}>
+          {tab==="dashboard"&&<Dashboard students={students} teachers={teachers} attendance={attendance} settings={settings} wpLog={wpLog} classTimings={classTimings}/>}
+          {tab==="students"&&canAccess("students")&&<Students students={students} setStudents={setStudents} teachers={teachers} settings={settings} showToast={showToast}/>}
+          {tab==="teachers"&&canAccess("teachers")&&<Teachers teachers={teachers} setTeachers={setTeachers} students={students} teacherAtt={teacherAtt} settings={settings} showToast={showToast}/>}
+          {tab==="fees"&&canAccess("fees")&&<Fees students={students} setStudents={setStudents} teachers={teachers} settings={settings} setSettings={setSettings} showToast={showToast}/>}
+          {tab==="challans"&&canAccess("challans")&&<Challans students={students} teachers={teachers} settings={settings} wpLog={wpLog} setWpLog={setWpLog} showToast={showToast}/>}
+          {tab==="attendance"&&canAccess("attendance")&&<Attendance students={students} teachers={teachers} attendance={attendance} setAttendance={setAttendance} teacherAtt={teacherAtt} setTeacherAtt={setTeacherAtt} classTimings={classTimings} settings={settings} showToast={showToast} setWpLog={setWpLog}/>}
+          {tab==="reports"&&canAccess("reports")&&<Reports students={students} teachers={teachers} attendance={attendance} teacherAtt={teacherAtt} settings={settings}/>}
+          {tab==="users"&&canAccess("users")&&<Users users={users} setUsers={setUsers} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="settings"&&canAccess("settings")&&<Settings settings={settings} setSettings={setSettings} classTimings={classTimings} setClassTimings={setClassTimings} showToast={showToast}/>}
+        </div>
+      </div>
+
+      {modal==="cp"&&<ChangePW currentUser={currentUser} users={users} setUsers={setUsers} setCurrentUser={setCurrentUser} onClose={()=>setModal(null)} showToast={showToast}/>}
+      <Toast toast={toast}/>
+    </div>
+  );
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function Dashboard({students,teachers,attendance,settings,wpLog,classTimings}){
+  const active=students.filter(s=>s.active);
+  const todayKey=new Date().toISOString().split("T")[0];
+  const todayAtt=Object.entries(attendance).filter(([k])=>k.startsWith(todayKey));
+  const presentT=todayAtt.filter(([,v])=>v.status==="present").length;
+  const absentT=todayAtt.filter(([,v])=>v.status==="absent").length;
+  const lateT=todayAtt.filter(([,v])=>v.status==="late").length;
+  const tmKey=`${CY}-${CM}`;
+  const tmFees=active.map(s=>s.fees[tmKey]).filter(Boolean);
+  const collected=tmFees.reduce((a,f)=>a+f.paid,0);
+  const pending=tmFees.reduce((a,f)=>a+Math.max(0,f.totalFee-f.discount-f.paid),0);
+  const totalDue=active.flatMap(s=>Object.values(s.fees)).reduce((a,f)=>a+Math.max(0,f.totalFee-f.discount-f.paid),0);
+
+  const stats=[
+    {label:"Total Students",value:active.length,sub:`${students.filter(s=>!s.active).length} inactive`,color:C.navy},
+    {label:"Collected This Month",value:`Rs. ${fmt(collected)}`,sub:`${MONTHS[CM]} ${CY}`,color:C.green},
+    {label:"Pending This Month",value:`Rs. ${fmt(pending)}`,sub:"To be collected",color:C.red},
+    {label:"Total Outstanding",value:`Rs. ${fmt(totalDue)}`,sub:"All time",color:C.yellow},
+    {label:"Present Today",value:presentT,sub:`${absentT} absent · ${lateT} late`,color:C.blue},
+    {label:"Teachers",value:teachers.filter(t=>t.active).length,sub:"Active",color:C.gold},
+  ];
+
+  return <div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:12,marginBottom:20}}>
+      {stats.map(st=><div key={st.label} style={{background:C.white,borderRadius:12,padding:"16px 18px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",borderTop:`3px solid ${st.color}`}}>
+        <div style={{fontSize:"0.68rem",color:C.textLight,fontWeight:700,textTransform:"uppercase",marginBottom:6}}>{st.label}</div>
+        <div style={{fontSize:"1.35rem",fontWeight:900,color:st.color,marginBottom:3}}>{st.value}</div>
+        <div style={{fontSize:"0.72rem",color:C.textLight}}>{st.sub}</div>
+      </div>)}
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+      <div style={S.card}>
+        <SecTitle title={`Defaulters — ${MONTHS[CM]}`}/>
+        {active.filter(s=>{const f=s.fees[tmKey];return f&&f.status!=="paid";}).slice(0,5).map(s=>{
+          const f=s.fees[tmKey],bal=f?f.totalFee-f.discount-f.paid:0;
+          return <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.border}`}}>
+            <div><div style={{fontWeight:700,fontSize:"0.87rem"}}>{s.name}</div><div style={{fontSize:"0.7rem",color:C.textLight}}>{s.class}</div></div>
+            <div style={{textAlign:"right"}}><div style={{fontWeight:800,color:C.red}}>Rs. {fmt(bal)}</div><Badge status={f?.status||"unpaid"}/></div>
+          </div>;
+        })}
+        {active.filter(s=>{const f=s.fees[tmKey];return f&&f.status!=="paid";}).length===0&&<div style={{textAlign:"center",padding:20,color:C.green,fontWeight:700}}>All fees collected</div>}
+      </div>
+      <div style={S.card}>
+        <SecTitle title="Recent Alerts"/>
+        {wpLog.length===0?<div style={{textAlign:"center",padding:20,color:C.textLight}}>No alerts yet</div>
+          :wpLog.slice(0,5).map(a=><div key={a.id} style={{padding:"7px 0",borderBottom:`1px solid ${C.border}`,fontSize:"0.82rem"}}>
+            <div style={{fontWeight:700}}>{a.studentName}</div>
+            <div style={{color:C.textLight,display:"flex",justifyContent:"space-between"}}><span style={{textTransform:"capitalize"}}>{a.type}</span><span>{a.time}</span></div>
+          </div>)}
+      </div>
+    </div>
+    <div style={S.card}>
+      <SecTitle title="Class Schedule Today"/>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
+        {classTimings.map(ct=><div key={ct.id} style={{background:C.bg,borderRadius:9,padding:"10px 12px",borderLeft:`3px solid ${C.gold}`}}>
+          <div style={{fontWeight:700,fontSize:"0.85rem"}}>{ct.class}</div>
+          <div style={{fontSize:"0.72rem",color:C.textMid}}>{ct.shift}</div>
+          <div style={{fontSize:"0.8rem",color:C.navy,fontWeight:700,marginTop:3}}>{ct.startTime} — {ct.endTime}</div>
+        </div>)}
+      </div>
+    </div>
+  </div>;
+}
+
+// ── STUDENTS ──────────────────────────────────────────────────────────────────
+function Students({students,setStudents,teachers,settings,showToast}){
+  const[search,setSearch]=useState("");
+  const[fc,setFc]=useState("All");
+  const[modal,setModal]=useState(null);
+  const[form,setForm]=useState(null);
+
+  const filtered=students.filter(s=>s.active).filter(s=>{
+    const q=search.toLowerCase();
+    return(s.name.toLowerCase().includes(q)||s.fatherName.toLowerCase().includes(q)||s.phone.includes(q))&&(fc==="All"||s.class===fc);
+  });
+
+  function openAdd(){setForm({name:"",fatherName:"",phone:"",parentWP:"",class:"FSc Pre-Med",enrollYear:CY,enrollMonth:CM,regFee:0,subjects:[{subject:"",fee:"",discount:"0",teacherId:""}]});setModal("add");}
+  function openEdit(s){setForm({...s,subjects:s.subjects.map(x=>({...x}))});setModal("edit");}
+
+  function save(){
+    if(!form.name.trim()){showToast("Name required","error");return;}
+    if(!form.subjects[0]?.fee){showToast("At least one subject with fee required","error");return;}
+    if(modal==="add"){
+      const ns={...form,id:gid(),fees:{},active:true,enrollYear:parseInt(form.enrollYear),enrollMonth:parseInt(form.enrollMonth)};
+      ns.fees=buildFees(ns);setStudents(p=>[...p,ns]);showToast(`${ns.name} added`);
+    }else{
+      setStudents(p=>p.map(s=>{if(s.id!==form.id)return s;const u={...form};u.fees=buildFees(u,s.fees);return u;}));
+      showToast("Student updated");
+    }
+    setModal(null);setForm(null);
+  }
+
+  function addSub(){setForm(f=>({...f,subjects:[...f.subjects,{subject:"",fee:"",discount:"0",teacherId:""}]}));}
+  function remSub(i){if(form.subjects.length===1)return;setForm(f=>({...f,subjects:f.subjects.filter((_,j)=>j!==i)}));}
+  function updSub(i,k,v){setForm(f=>({...f,subjects:f.subjects.map((s,j)=>j===i?{...s,[k]:v}:s)}));}
+
+  return <div>
+    <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search student..." style={{...S.input,flex:1,minWidth:160}}/>
+      <select value={fc} onChange={e=>setFc(e.target.value)} style={{...S.select,width:"auto"}}>
+        <option value="All">All Classes</option>{CLASSES.map(c=><option key={c}>{c}</option>)}
+      </select>
+      <button onClick={openAdd} style={S.btnPrimary}>+ Add Student</button>
+    </div>
+    <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <table><thead><tr>{["Student","Father","Class","Subjects","Monthly Fee","WhatsApp","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <tbody>
+          {filtered.map(s=>{
+            const tf=s.subjects.reduce((a,x)=>a+(parseInt(x.fee)||0),0);
+            return <tr key={s.id} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+              <td style={S.td}><div style={{fontWeight:700}}>{s.name}</div><div style={{fontSize:"0.7rem",color:C.textLight}}>{s.phone}</div></td>
+              <td style={S.td}>{s.fatherName}</td>
+              <td style={S.td}><span style={{fontWeight:600}}>{s.class}</span></td>
+              <td style={S.td}><div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{s.subjects.map((x,i)=><span key={i} style={S.badge(C.navy,C.blueBg)}>{x.subject}</span>)}</div></td>
+              <td style={S.td}><span style={{fontWeight:700,color:C.green}}>Rs. {fmt(tf)}</span></td>
+              <td style={S.td}><span style={{fontSize:"0.8rem"}}>{s.parentWP}</span></td>
+              <td style={S.td}><div style={{display:"flex",gap:5}}>
+                <button onClick={()=>openEdit(s)} style={{...S.btnGhost,padding:"6px 10px",fontSize:"0.78rem"}}>Edit</button>
+                <button onClick={()=>{setStudents(p=>p.map(x=>x.id===s.id?{...x,active:false}:x));showToast("Removed");}} style={{...S.btnDanger,padding:"6px 10px",fontSize:"0.78rem"}}>Remove</button>
+              </div></td>
+            </tr>;
+          })}
+          {filtered.length===0&&<tr><td colSpan={7} style={{...S.td,textAlign:"center",padding:40,color:C.textLight}}>No students found</td></tr>}
+        </tbody>
+      </table>
+    </div>
+
+    {(modal==="add"||modal==="edit")&&form&&(
+      <Modal title={modal==="add"?"Add New Student":"Edit Student"} onClose={()=>{setModal(null);setForm(null);}} width={680}>
+        <G2><Field label="Student Full Name *"><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={S.input}/></Field>
+          <Field label="Father Name"><input value={form.fatherName} onChange={e=>setForm({...form,fatherName:e.target.value})} style={S.input}/></Field></G2>
+        <G2><Field label="Phone"><input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={S.input} placeholder="0300-0000000"/></Field>
+          <Field label="Parent WhatsApp"><input value={form.parentWP} onChange={e=>setForm({...form,parentWP:e.target.value})} style={S.input} placeholder="03000000000"/></Field></G2>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
+          <Field label="Class" mb={0}><select value={form.class} onChange={e=>setForm({...form,class:e.target.value})} style={S.select}>{CLASSES.map(c=><option key={c}>{c}</option>)}</select></Field>
+          <Field label="Enrollment Month" mb={0}><select value={form.enrollMonth} onChange={e=>setForm({...form,enrollMonth:parseInt(e.target.value)})} style={S.select}>{MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}</select></Field>
+          <Field label="Enrollment Year" mb={0}><input type="number" value={form.enrollYear} onChange={e=>setForm({...form,enrollYear:e.target.value})} style={S.input}/></Field>
+        </div>
+        <Field label="Registration / Arrears Fee (Rs.)"><input type="number" value={form.regFee||0} onChange={e=>setForm({...form,regFee:parseInt(e.target.value)||0})} style={S.input}/></Field>
+        <div style={{marginBottom:14}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <label style={S.label}>Subjects, Fees & Assigned Teachers</label>
+            <button onClick={addSub} style={{...S.btnPrimary,padding:"5px 12px",fontSize:"0.78rem"}}>+ Add Subject</button>
+          </div>
+          {form.subjects.map((sub,i)=><div key={i} style={{background:C.bg,borderRadius:10,padding:12,marginBottom:10,border:`1px solid ${C.border}`}}>
+            <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr auto",gap:10,alignItems:"end",marginBottom:10}}>
+              <div><label style={S.label}>Subject</label><input value={sub.subject} onChange={e=>updSub(i,"subject",e.target.value)} style={S.input} placeholder="e.g. Chemistry"/></div>
+              <div><label style={S.label}>Fee (Rs.)</label><input type="number" value={sub.fee} onChange={e=>updSub(i,"fee",e.target.value)} style={S.input}/></div>
+              <div><label style={S.label}>Discount (Rs.)</label><input type="number" value={sub.discount} onChange={e=>updSub(i,"discount",e.target.value)} style={S.input}/></div>
+              <button onClick={()=>remSub(i)} style={{...S.btnDanger,padding:"10px 12px",marginTop:18}} disabled={form.subjects.length===1}>×</button>
+            </div>
+            <div><label style={S.label}>Assigned Teacher</label>
+              <select value={sub.teacherId} onChange={e=>updSub(i,"teacherId",e.target.value)} style={S.select}>
+                <option value="">— Select Teacher —</option>
+                {teachers.filter(t=>t.active).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
+          </div>)}
+          <div style={{background:C.navy,color:C.white,padding:"10px 14px",borderRadius:8,fontWeight:700,display:"flex",justifyContent:"space-between"}}>
+            <span>Monthly Fee: Rs. {fmt(form.subjects.reduce((a,s)=>a+(parseInt(s.fee)||0),0))}</span>
+            <span>Discount: Rs. {fmt(form.subjects.reduce((a,s)=>a+(parseInt(s.discount)||0),0))}</span>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={save} style={{...S.btnPrimary,flex:1}}>{modal==="add"?"Add Student":"Save Changes"}</button>
+          <button onClick={()=>{setModal(null);setForm(null);}} style={{...S.btnGhost,flex:1}}>Cancel</button>
+        </div>
+      </Modal>
+    )}
+  </div>;
+}
+
+// ── TEACHERS ──────────────────────────────────────────────────────────────────
+function Teachers({teachers,setTeachers,students,teacherAtt,settings,showToast}){
+  const[modal,setModal]=useState(null);
+  const[form,setForm]=useState(null);
+  const[slipModal,setSlipModal]=useState(null);
+  const[slipMonth,setSlipMonth]=useState(CM);
+  const[slipYear,setSlipYear]=useState(CY);
+
+  function openAdd(){setForm({name:"",phone:"",cnic:"",subjects:[""],commissionType:"percentage",commissionValue:"",active:true});setModal("add");}
+  function openEdit(t){setForm({...t,subjects:[...t.subjects]});setModal("edit");}
+
+  function save(){
+    if(!form.name.trim()){showToast("Name required","error");return;}
+    if(modal==="add"){setTeachers(p=>[...p,{...form,id:gid(),subjects:form.subjects.filter(s=>s.trim())}]);showToast("Teacher added");}
+    else{setTeachers(p=>p.map(t=>t.id===form.id?{...form,subjects:form.subjects.filter(s=>s.trim())}:t));showToast("Teacher updated");}
+    setModal(null);setForm(null);
+  }
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+      <button onClick={openAdd} style={S.btnPrimary}>+ Add Teacher</button>
+    </div>
+    <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <table><thead><tr>{["Teacher","Phone","Subjects","Commission","Students","Salary Slip","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <tbody>{teachers.filter(t=>t.active).map(t=>{
+          const cnt=students.filter(s=>s.active&&s.subjects.some(x=>x.teacherId===t.id)).length;
+          return <tr key={t.id} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            <td style={S.td}><div style={{fontWeight:700}}>{t.name}</div><div style={{fontSize:"0.7rem",color:C.textLight}}>{t.cnic}</div></td>
+            <td style={S.td}>{t.phone}</td>
+            <td style={S.td}><div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{t.subjects.map((s,i)=><span key={i} style={S.badge(C.navy,C.blueBg)}>{s}</span>)}</div></td>
+            <td style={S.td}><span style={{fontWeight:700}}>{t.commissionType==="percentage"?`${t.commissionValue}%`:`Rs. ${fmt(t.commissionValue)}/student`}</span></td>
+            <td style={S.td}><span style={{fontWeight:700,color:C.navy}}>{cnt}</span></td>
+            <td style={S.td}>
+              <button onClick={()=>{setSlipModal(t);}} style={{...S.btnGold,padding:"6px 10px",fontSize:"0.78rem"}}>Salary Slip</button>
+            </td>
+            <td style={S.td}><div style={{display:"flex",gap:5}}>
+              <button onClick={()=>openEdit(t)} style={{...S.btnGhost,padding:"6px 10px",fontSize:"0.78rem"}}>Edit</button>
+              <button onClick={()=>{setTeachers(p=>p.map(x=>x.id===t.id?{...x,active:false}:x));showToast("Removed");}} style={{...S.btnDanger,padding:"6px 10px",fontSize:"0.78rem"}}>Remove</button>
+            </div></td>
+          </tr>;
+        })}</tbody>
+      </table>
+    </div>
+
+    {slipModal&&<Modal title={`Salary Slip — ${slipModal.name}`} onClose={()=>setSlipModal(null)} width={420}>
+      <div style={{marginBottom:14,padding:"10px 14px",background:C.bg,borderRadius:8,fontSize:"0.85rem",color:C.textMid}}>Select month for salary slip</div>
+      <G2>
+        <Field label="Month"><select value={slipMonth} onChange={e=>setSlipMonth(parseInt(e.target.value))} style={S.select}>{MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}</select></Field>
+        <Field label="Year"><select value={slipYear} onChange={e=>setSlipYear(parseInt(e.target.value))} style={S.select}>{[CY-1,CY,CY+1].map(y=><option key={y}>{y}</option>)}</select></Field>
+      </G2>
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={()=>{printSalarySlip(slipModal,slipMonth,slipYear,students,teacherAtt,settings);setSlipModal(null);}} style={{...S.btnGold,flex:1}}>Generate & Print Salary Slip</button>
+        <button onClick={()=>setSlipModal(null)} style={{...S.btnGhost,flex:1}}>Cancel</button>
+      </div>
+    </Modal>}
+
+    {(modal==="add"||modal==="edit")&&form&&(
+      <Modal title={modal==="add"?"Add Teacher":"Edit Teacher"} onClose={()=>{setModal(null);setForm(null);}}>
+        <G2><Field label="Full Name *"><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={S.input}/></Field>
+          <Field label="Phone"><input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={S.input}/></Field></G2>
+        <Field label="CNIC"><input value={form.cnic} onChange={e=>setForm({...form,cnic:e.target.value})} style={S.input} placeholder="13101-0000000-0"/></Field>
+        <div style={{marginBottom:14}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <label style={S.label}>Subjects</label>
+            <button onClick={()=>setForm(f=>({...f,subjects:[...f.subjects,""]}))} style={{...S.btnPrimary,padding:"4px 10px",fontSize:"0.75rem"}}>+ Add</button>
+          </div>
+          {form.subjects.map((s,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:8}}>
+            <input value={s} onChange={e=>setForm(f=>({...f,subjects:f.subjects.map((x,j)=>j===i?e.target.value:x)}))} style={{...S.input,flex:1}} placeholder="Subject name"/>
+            <button onClick={()=>setForm(f=>({...f,subjects:f.subjects.filter((_,j)=>j!==i)}))} style={{...S.btnDanger,padding:"0 12px"}} disabled={form.subjects.length===1}>×</button>
+          </div>)}
+        </div>
+        <G2>
+          <Field label="Commission Type"><select value={form.commissionType} onChange={e=>setForm({...form,commissionType:e.target.value})} style={S.select}><option value="percentage">Percentage (%)</option><option value="fixed">Fixed (Rs./student)</option></select></Field>
+          <Field label={form.commissionType==="percentage"?"Percentage %":"Amount Rs./student"}><input type="number" value={form.commissionValue} onChange={e=>setForm({...form,commissionValue:e.target.value})} style={S.input}/></Field>
+        </G2>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={save} style={{...S.btnPrimary,flex:1}}>Save Teacher</button>
+          <button onClick={()=>{setModal(null);setForm(null);}} style={{...S.btnGhost,flex:1}}>Cancel</button>
+        </div>
+      </Modal>
+    )}
+  </div>;
+}
+
+// ── FEES ──────────────────────────────────────────────────────────────────────
+function Fees({students,setStudents,teachers,settings,setSettings,showToast}){
+  const[selId,setSelId]=useState("");
+  const[modal,setModal]=useState(null);
+  const[pf,setPf]=useState({amount:"",discount:"",feeKey:""});
+  const sel=students.find(s=>s.id===selId);
+
+  function recordPay(){
+    const amt=parseInt(pf.amount)||0,dis=parseInt(pf.discount)||0;
+    if(!amt){showToast("Enter amount","error");return;}
+    setStudents(p=>p.map(s=>{
+      if(s.id!==selId)return s;
+      const fees={...s.fees},fee={...fees[pf.feeKey]};
+      fee.discount=dis;fee.paid=Math.min(fee.paid+amt,fee.totalFee-dis);
+      fee.paidDate=new Date().toLocaleDateString();
+      fee.status=fee.paid>=(fee.totalFee-fee.discount)?"paid":fee.paid>0?"partial":"unpaid";
+      fees[pf.feeKey]=fee;return{...s,fees};
+    }));
+    showToast("Payment recorded");setModal(null);
+  }
+
+  const active=students.filter(s=>s.active);
+
+  return <div>
+    <Field label="Select Student">
+      <select value={selId} onChange={e=>setSelId(e.target.value)} style={S.select}>
+        <option value="">— Select a student —</option>
+        {active.map(s=><option key={s.id} value={s.id}>{s.name} ({s.class})</option>)}
+      </select>
+    </Field>
+    {sel&&(()=>{
+      const entries=Object.entries(sel.fees).sort(([a],[b])=>{const[ay,am]=a.split("-").map(Number),[by,bm]=b.split("-").map(Number);return by-ay||bm-am;});
+      const totalPaid=entries.reduce((a,[,f])=>a+f.paid,0);
+      const totalDue=entries.reduce((a,[,f])=>a+Math.max(0,f.totalFee-f.discount-f.paid),0);
+      return <div>
+        <div style={{...S.card,background:C.navy,color:C.white,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div><div style={{fontWeight:900,fontSize:"1.1rem"}}>{sel.name}</div><div style={{opacity:0.6,fontSize:"0.8rem"}}>{sel.class} | {sel.subjects.map(x=>x.subject).join(", ")}</div></div>
+          <div style={{display:"flex",gap:24}}>
+            <div style={{textAlign:"right"}}><div style={{opacity:0.6,fontSize:"0.7rem",textTransform:"uppercase"}}>Total Paid</div><div style={{fontWeight:900,color:C.goldLight}}>Rs. {fmt(totalPaid)}</div></div>
+            <div style={{textAlign:"right"}}><div style={{opacity:0.6,fontSize:"0.7rem",textTransform:"uppercase"}}>Total Due</div><div style={{fontWeight:900,color:"#ff9999"}}>Rs. {fmt(totalDue)}</div></div>
+          </div>
+        </div>
+        <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+          <table><thead><tr>{["Month","Challan No","Fee","Discount","Paid","Balance","Status","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+            <tbody>{entries.map(([key,fee])=>{
+              const[y,m]=key.split("-").map(Number),bal=fee.totalFee-fee.discount-fee.paid;
+              return <tr key={key} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+                <td style={S.td}><span style={{fontWeight:700}}>{MONTHS[m]} {y}</span></td>
+                <td style={S.td}><span style={{fontFamily:"monospace",fontSize:"0.82rem"}}>{pad(fee.challanNo||0)}</span></td>
+                <td style={S.td}>Rs. {fmt(fee.totalFee)}</td>
+                <td style={S.td}>{fee.discount>0?<span style={{color:C.green}}>Rs. {fmt(fee.discount)}</span>:"—"}</td>
+                <td style={S.td}><span style={{color:C.green,fontWeight:700}}>Rs. {fmt(fee.paid)}</span></td>
+                <td style={S.td}><span style={{color:bal>0?C.red:C.green,fontWeight:700}}>Rs. {fmt(bal)}</span></td>
+                <td style={S.td}><Badge status={fee.status}/></td>
+                <td style={S.td}><div style={{display:"flex",gap:5}}>
+                  {fee.status!=="paid"&&<button onClick={()=>{setPf({amount:String(bal),discount:String(fee.discount),feeKey:key});setModal("pay");}} style={{...S.btnGreen,padding:"5px 9px",fontSize:"0.75rem"}}>Pay</button>}
+                  <button onClick={()=>printChallan(sel,fee,key,settings,teachers)} style={{...S.btnGold,padding:"5px 9px",fontSize:"0.75rem"}}>Challan</button>
+                </div></td>
+              </tr>;
+            })}</tbody>
+          </table>
+        </div>
+      </div>;
+    })()}
+    {modal==="pay"&&<Modal title="Record Payment" onClose={()=>setModal(null)} width={400}>
+      <div style={{marginBottom:12,background:C.bg,borderRadius:8,padding:"10px 14px",fontSize:"0.85rem"}}>{sel?.name} — {pf.feeKey?`${MONTHS[parseInt(pf.feeKey.split("-")[1])]} ${pf.feeKey.split("-")[0]}`:""}</div>
+      <Field label="Amount Paid (Rs.)"><input type="number" value={pf.amount} onChange={e=>setPf({...pf,amount:e.target.value})} style={S.input}/></Field>
+      <Field label="Discount (Rs.)"><input type="number" value={pf.discount} onChange={e=>setPf({...pf,discount:e.target.value})} style={S.input}/></Field>
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={recordPay} style={{...S.btnGreen,flex:1}}>Save Payment</button>
+        <button onClick={()=>setModal(null)} style={{...S.btnGhost,flex:1}}>Cancel</button>
+      </div>
+    </Modal>}
+  </div>;
+}
+
+// ── CHALLANS ──────────────────────────────────────────────────────────────────
+function Challans({students,teachers,settings,wpLog,setWpLog,showToast}){
+  const[sending,setSending]=useState(false);
+  const active=students.filter(s=>s.active);
+
+  function sendAll(){
+    setSending(true);
+    const logs=active.map(s=>{
+      const key=`${CY}-${CM}`,fee=s.fees[key];if(!fee)return null;
+      return{id:gid(),type:"challan",studentName:s.name,student:s,status:"sent",time:new Date().toLocaleTimeString(),month:CM,year:CY};
+    }).filter(Boolean);
+    setWpLog(p=>[...logs,...p]);
+    setTimeout(()=>{setSending(false);showToast(`Sent to ${logs.length} parents`);},1200);
+  }
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div>
+        <div style={{fontWeight:800,fontSize:"1rem",color:C.navy}}>Monthly Challans — {MONTHS[CM]} {CY}</div>
+        <div style={{color:C.textLight,fontSize:"0.82rem"}}>Generate & send fee challans to parents</div>
+      </div>
+      <button onClick={sendAll} disabled={sending} style={{...S.btnGreen,opacity:sending?0.7:1}}>{sending?"Sending...":`Send to All (${active.length})`}</button>
+    </div>
+    <div style={{...S.card,background:C.navy,color:C.white}}>
+      <div style={{fontWeight:700,marginBottom:4}}>Auto Challan</div>
+      <div style={{opacity:0.7,fontSize:"0.85rem"}}>Auto send on {settings.autoSendDay}th of every month — configurable in Settings</div>
+    </div>
+    <div style={{fontWeight:700,color:C.navy,marginBottom:10}}>Individual Challan Print</div>
+    <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <table><thead><tr>{["Student","Class","This Month Fee","Status","Action"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <tbody>{active.map(s=>{
+          const key=`${CY}-${CM}`,fee=s.fees[key];
+          const bal=fee?fee.totalFee-fee.discount-fee.paid:0;
+          return <tr key={s.id} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            <td style={S.td}><span style={{fontWeight:700}}>{s.name}</span></td>
+            <td style={S.td}>{s.class}</td>
+            <td style={S.td}>Rs. {fmt(fee?.totalFee||0)}</td>
+            <td style={S.td}>{fee?<Badge status={fee.status}/>:"—"}</td>
+            <td style={S.td}>{fee&&<button onClick={()=>printChallan(s,fee,key,settings,teachers)} style={{...S.btnGold,padding:"6px 12px",fontSize:"0.78rem"}}>Print Challan</button>}</td>
+          </tr>;
+        })}</tbody>
+      </table>
+    </div>
+  </div>;
+}
+
+// ── ATTENDANCE ────────────────────────────────────────────────────────────────
+function Attendance({students,teachers,attendance,setAttendance,teacherAtt,setTeacherAtt,classTimings,settings,showToast,setWpLog}){
+  const[viewDate,setViewDate]=useState(new Date().toISOString().split("T")[0]);
+  const[scanning,setScanning]=useState(false);
+  const[activeTab,setActiveTab]=useState("students");
+  const ct=new Date().toLocaleTimeString();
+
+  function mark(sid,status,isTeacher=false){
+    const key=`${viewDate}-${sid}`;
+    if(isTeacher){setTeacherAtt(p=>({...p,[key]:{status,time:ct}}));}
+    else{
+      setAttendance(p=>({...p,[key]:{status,time:ct}}));
+      if(status==="absent"||status==="late"){
+        const s=students.find(x=>x.id===sid);
+        if(s){setWpLog(p=>[{id:gid(),type:status==="absent"?"Absent Alert":"Late Alert",studentName:s.name,status:"sent",time:ct},...p]);}
+      }
+    }
+  }
+
+  function simulateScan(){
+    setScanning(true);
+    const list=activeTab==="students"?students.filter(s=>s.active):teachers.filter(t=>t.active);
+    list.forEach((item,i)=>setTimeout(()=>{
+      const r=Math.random();
+      mark(item.id,r>0.8?"absent":r>0.6?"late":"present",activeTab==="teachers");
+      if(i===list.length-1)setTimeout(()=>setScanning(false),400);
+    },i*250));
+  }
+
+  const list=activeTab==="students"?students.filter(s=>s.active):teachers.filter(t=>t.active);
+  const attSrc=activeTab==="students"?attendance:teacherAtt;
+  const summary={present:0,late:0,absent:0};
+  list.forEach(item=>{const r=attSrc[`${viewDate}-${item.id}`];if(r)summary[r.status]=(summary[r.status]||0)+1;});
+
+  return <div>
+    <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+      <input type="date" value={viewDate} onChange={e=>setViewDate(e.target.value)} style={{...S.input,width:"auto"}}/>
+      <div style={{display:"flex",background:C.bg,borderRadius:9,border:`1px solid ${C.border}`,overflow:"hidden"}}>
+        {["students","teachers"].map(t=><button key={t} onClick={()=>setActiveTab(t)} style={{padding:"9px 16px",background:activeTab===t?C.navy:"transparent",color:activeTab===t?C.white:C.text,border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.85rem",textTransform:"capitalize",fontFamily:"inherit"}}>{t}</button>)}
+      </div>
+      <button onClick={simulateScan} disabled={scanning} style={{...S.btnPrimary,opacity:scanning?0.7:1}}>{scanning?"Scanning...":"Simulate Biometric"}</button>
+      <button onClick={()=>printAttendance(list,attSrc,viewDate,activeTab,settings)} style={S.btnGold}>Print Attendance</button>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:14}}>
+      {[["Present",summary.present,C.green,C.greenBg],["Late",summary.late,C.yellow,C.yellowBg],["Absent",summary.absent,C.red,C.redBg]].map(([l,v,c,bg])=>
+        <div key={l} style={{background:bg,borderRadius:10,padding:"12px 16px",borderLeft:`3px solid ${c}`}}>
+          <div style={{fontSize:"0.7rem",color:c,fontWeight:700,textTransform:"uppercase"}}>{l}</div>
+          <div style={{fontSize:"1.5rem",fontWeight:900,color:c}}>{v}</div>
+        </div>)}
+    </div>
+    <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <table><thead><tr>{["Name",activeTab==="students"?"Class":"Subjects","Status","Time","Mark Attendance"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <tbody>{list.map(item=>{
+          const key=`${viewDate}-${item.id}`,rec=attSrc[key];
+          return <tr key={item.id} style={{background:rec?.status==="late"?"#fffde7":""}} onMouseEnter={e=>e.currentTarget.style.background=rec?.status==="late"?"#fff9c4":C.bg} onMouseLeave={e=>e.currentTarget.style.background=rec?.status==="late"?"#fffde7":""}>
+            <td style={S.td}><div style={{fontWeight:700}}>{item.name}</div>{activeTab==="students"&&<div style={{fontSize:"0.7rem",color:C.textLight}}>{item.fatherName}</div>}</td>
+            <td style={S.td}>{activeTab==="students"?item.class:item.subjects?.join(", ")}</td>
+            <td style={S.td}>{rec?<Badge status={rec.status}/>:<span style={{color:C.textLight,fontSize:"0.82rem"}}>Not marked</span>}</td>
+            <td style={S.td}>{rec?.time||"—"}</td>
+            <td style={S.td}><div style={{display:"flex",gap:5}}>
+              {["present","late","absent","leave"].map(s=><button key={s} onClick={()=>mark(item.id,s,activeTab==="teachers")}
+                style={{padding:"4px 8px",border:`1px solid ${s==="present"?C.green:s==="late"?C.yellow:s==="absent"?C.red:"#888"}`,
+                  background:rec?.status===s?(s==="present"?C.greenBg:s==="late"?C.yellowBg:s==="absent"?C.redBg:"#eee"):"transparent",
+                  color:s==="present"?C.green:s==="late"?C.yellow:s==="absent"?C.red:"#888",
+                  borderRadius:6,cursor:"pointer",fontSize:"0.72rem",fontWeight:700,fontFamily:"inherit"}}>
+                {s.charAt(0).toUpperCase()+s.slice(1)}
+              </button>)}
+            </div></td>
+          </tr>;
+        })}</tbody>
+      </table>
+    </div>
+    <div style={{...S.card,marginTop:14}}>
+      <div style={{fontWeight:700,marginBottom:6,color:C.navy}}>Alert Rules</div>
+      <div style={{fontSize:"0.85rem",color:C.textMid}}>Student absent → Parent WhatsApp immediately. Student late → Parent notified. Teacher attendance → recorded only, no messages sent.</div>
+    </div>
+  </div>;
+}
+
+// ── REPORTS ───────────────────────────────────────────────────────────────────
+function Reports({students,teachers,attendance,teacherAtt,settings}){
+  const[rType,setRType]=useState("fee");
+  const[month,setMonth]=useState(CM);
+  const[year,setYear]=useState(CY);
+  const active=students.filter(s=>s.active);
+  const key=`${year}-${month}`;
+
+  const feeReport=active.map(s=>{const f=s.fees[key];return{name:s.name,class:s.class,fee:f?.totalFee||0,discount:f?.discount||0,paid:f?.paid||0,balance:f?Math.max(0,f.totalFee-f.discount-f.paid):0,status:f?.status||"no record"};});
+  const tFee=feeReport.reduce((a,r)=>a+r.fee,0),tPaid=feeReport.reduce((a,r)=>a+r.paid,0),tBal=feeReport.reduce((a,r)=>a+r.balance,0);
+
+  const teacherReport=teachers.filter(t=>t.active).map(t=>{
+    const assigned=active.filter(s=>s.subjects.some(x=>x.teacherId===t.id));
+    const revenue=assigned.reduce((a,s)=>a+s.subjects.filter(x=>x.teacherId===t.id).reduce((b,x)=>b+(parseInt(x.fee)||0),0),0);
+    const commission=t.commissionType==="percentage"?Math.round(revenue*t.commissionValue/100):assigned.length*(parseInt(t.commissionValue)||0);
+    return{name:t.name,students:assigned.length,revenue,commission};
+  });
+
+  const attReport=active.map(s=>{
+    const keys=Object.keys(attendance).filter(k=>k.endsWith(`-${s.id}`));
+    const p=keys.filter(k=>attendance[k].status==="present").length;
+    const l=keys.filter(k=>attendance[k].status==="late").length;
+    const a=keys.filter(k=>attendance[k].status==="absent").length;
+    return{name:s.name,class:s.class,present:p,late:l,absent:a,total:keys.length,rate:keys.length>0?Math.round((p/keys.length)*100):0};
+  });
+
+  const tAttReport=teachers.filter(t=>t.active).map(t=>{
+    const keys=Object.keys(teacherAtt).filter(k=>k.endsWith(`-${t.id}`));
+    const p=keys.filter(k=>teacherAtt[k].status==="present").length;
+    const l=keys.filter(k=>teacherAtt[k].status==="late").length;
+    const a=keys.filter(k=>teacherAtt[k].status==="absent").length;
+    return{name:t.name,present:p,late:l,absent:a,total:keys.length,rate:keys.length>0?Math.round((p/keys.length)*100):0};
+  });
+
+  return <div>
+    <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+      <div style={{display:"flex",background:C.bg,borderRadius:9,border:`1px solid ${C.border}`,overflow:"hidden"}}>
+        {[["fee","Fee Collection"],["teacher","Teacher Commission"],["attendance","Student Attendance"],["teacherAtt","Teacher Attendance"]].map(([id,label])=>
+          <button key={id} onClick={()=>setRType(id)} style={{padding:"9px 14px",background:rType===id?C.navy:"transparent",color:rType===id?C.white:C.text,border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.82rem",fontFamily:"inherit"}}>{label}</button>)}
+      </div>
+      {rType==="fee"&&<div style={{display:"flex",gap:8}}>
+        <select value={month} onChange={e=>setMonth(parseInt(e.target.value))} style={{...S.select,width:"auto"}}>{MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}</select>
+        <select value={year} onChange={e=>setYear(parseInt(e.target.value))} style={{...S.select,width:"auto"}}>{[CY-1,CY,CY+1].map(y=><option key={y}>{y}</option>)}</select>
+      </div>}
+    </div>
+
+    {rType==="fee"&&<div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:14}}>
+        {[["Total Billed",fmt(tFee),C.navy],["Collected",fmt(tPaid),C.green],["Outstanding",fmt(tBal),C.red]].map(([l,v,c])=>
+          <div key={l} style={{background:C.white,borderRadius:10,padding:"14px 18px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",borderTop:`3px solid ${c}`}}>
+            <div style={{fontSize:"0.7rem",color:C.textLight,fontWeight:700,textTransform:"uppercase",marginBottom:5}}>{l}</div>
+            <div style={{fontSize:"1.3rem",fontWeight:900,color:c}}>Rs. {v}</div>
+          </div>)}
+      </div>
+      <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+        <table><thead><tr>{["Student","Class","Fee","Discount","Paid","Balance","Status"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{feeReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td><td style={S.td}>{r.class}</td>
+            <td style={S.td}>Rs. {fmt(r.fee)}</td>
+            <td style={S.td}>{r.discount>0?<span style={{color:C.green}}>Rs. {fmt(r.discount)}</span>:"—"}</td>
+            <td style={S.td}><span style={{color:C.green,fontWeight:700}}>Rs. {fmt(r.paid)}</span></td>
+            <td style={S.td}><span style={{color:r.balance>0?C.red:C.green,fontWeight:700}}>Rs. {fmt(r.balance)}</span></td>
+            <td style={S.td}><Badge status={r.status}/></td>
+          </tr>)}</tbody>
+        </table>
+      </div>
+    </div>}
+
+    {rType==="teacher"&&<div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <table><thead><tr>{["Teacher","Students","Revenue","Commission Due"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <tbody>{teacherReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+          <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td>
+          <td style={S.td}>{r.students}</td>
+          <td style={S.td}>Rs. {fmt(r.revenue)}</td>
+          <td style={S.td}><span style={{fontWeight:900,color:C.gold,fontSize:"1rem"}}>Rs. {fmt(r.commission)}</span></td>
+        </tr>)}</tbody>
+      </table>
+    </div>}
+
+    {rType==="attendance"&&<div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <table><thead><tr>{["Student","Class","Present","Late","Absent","Total","Rate"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <tbody>{attReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+          <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td><td style={S.td}>{r.class}</td>
+          <td style={S.td}><span style={{color:C.green,fontWeight:700}}>{r.present}</span></td>
+          <td style={S.td}><span style={{color:C.yellow,fontWeight:700}}>{r.late}</span></td>
+          <td style={S.td}><span style={{color:C.red,fontWeight:700}}>{r.absent}</span></td>
+          <td style={S.td}>{r.total}</td>
+          <td style={S.td}><div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{flex:1,background:C.bg,borderRadius:4,height:6,overflow:"hidden"}}><div style={{width:`${r.rate}%`,background:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,height:"100%"}}/></div>
+            <span style={{fontWeight:700,color:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,minWidth:34}}>{r.rate}%</span>
+          </div></td>
+        </tr>)}</tbody>
+      </table>
+    </div>}
+
+    {rType==="teacherAtt"&&<div>
+      <div style={{...S.card,background:C.yellowBg,borderLeft:`4px solid ${C.yellow}`,padding:"12px 16px",marginBottom:14}}>
+        <div style={{fontWeight:700,color:C.yellow,fontSize:"0.85rem"}}>Teachers with late arrivals are highlighted. No salary deduction — record only.</div>
+      </div>
+      <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+        <table><thead><tr>{["Teacher","Present","Late","Absent","Total","Rate"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{tAttReport.map((r,i)=><tr key={i} style={{background:r.late>0?"#fffde7":""}} onMouseEnter={e=>e.currentTarget.style.background=r.late>0?"#fff9c4":C.bg} onMouseLeave={e=>e.currentTarget.style.background=r.late>0?"#fffde7":""}>
+            <td style={S.td}><span style={{fontWeight:700,color:r.late>0?C.red:C.text}}>{r.name}{r.late>0?" ⚠":""}</span></td>
+            <td style={S.td}><span style={{color:C.green,fontWeight:700}}>{r.present}</span></td>
+            <td style={S.td}><span style={{color:C.red,fontWeight:700,background:r.late>0?C.redBg:"transparent",padding:r.late>0?"2px 8px":"0",borderRadius:4}}>{r.late}</span></td>
+            <td style={S.td}><span style={{color:C.red,fontWeight:700}}>{r.absent}</span></td>
+            <td style={S.td}>{r.total}</td>
+            <td style={S.td}><div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{flex:1,background:C.bg,borderRadius:4,height:6,overflow:"hidden"}}><div style={{width:`${r.rate}%`,background:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,height:"100%"}}/></div>
+              <span style={{fontWeight:700,color:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,minWidth:34}}>{r.rate}%</span>
+            </div></td>
+          </tr>)}</tbody>
+        </table>
+      </div>
+    </div>}
+  </div>;
+}
+
+// ── USERS ─────────────────────────────────────────────────────────────────────
+function Users({users,setUsers,currentUser,showToast}){
+  const[modal,setModal]=useState(null);
+  const[form,setForm]=useState(null);
+
+  function save(){
+    if(!form.name.trim()||!form.username.trim()||!form.password.trim()){showToast("All fields required","error");return;}
+    if(users.find(u=>u.username===form.username&&u.id!==form.id)){showToast("Username exists","error");return;}
+    if(modal==="add"){setUsers(p=>[...p,{...form,id:gid()}]);showToast("User created");}
+    else{setUsers(p=>p.map(u=>u.id===form.id?form:u));showToast("Updated");}
+    setModal(null);setForm(null);
+  }
+
+  return <div>
+    {currentUser.role==="superadmin"&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+      <button onClick={()=>{setForm({name:"",username:"",password:"",role:"staff",active:true,permissions:{students:true,fees:true,attendance:true,challans:true,teachers:false,reports:true,users:false,settings:false}});setModal("add");}} style={S.btnPrimary}>+ Add User</button>
+    </div>}
+    <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <table><thead><tr>{["Name","Username","Role","Permissions","Status","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <tbody>{users.map(u=><tr key={u.id} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+          <td style={S.td}><span style={{fontWeight:700}}>{u.name}</span></td>
+          <td style={S.td}><code style={{background:C.bg,padding:"2px 6px",borderRadius:4,fontSize:"0.83rem"}}>{u.username}</code></td>
+          <td style={S.td}><span style={S.badge(u.role==="superadmin"?C.gold:C.navy,u.role==="superadmin"?"#fff3cd":C.blueBg)}>{u.role==="superadmin"?"Super Admin":u.role}</span></td>
+          <td style={S.td}>{u.role==="superadmin"?<span style={{color:C.textLight,fontSize:"0.82rem"}}>Full Access</span>:<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{ALL_PERMS.filter(p=>u.permissions?.[p]).map(p=><span key={p} style={S.badge(C.navy,C.blueBg)}>{p}</span>)}</div>}</td>
+          <td style={S.td}><Badge status={u.active?"present":"absent"}/></td>
+          <td style={S.td}>{u.role!=="superadmin"&&currentUser.role==="superadmin"&&<div style={{display:"flex",gap:5}}>
+            <button onClick={()=>{setForm({...u,permissions:{...u.permissions}});setModal("edit");}} style={{...S.btnGhost,padding:"6px 10px",fontSize:"0.78rem"}}>Edit</button>
+            <button onClick={()=>setUsers(p=>p.map(x=>x.id===u.id?{...x,active:!x.active}:x))} style={{...S.btnDanger,padding:"6px 10px",fontSize:"0.78rem"}}>{u.active?"Disable":"Enable"}</button>
+          </div>}</td>
+        </tr>)}</tbody>
+      </table>
+    </div>
+    {(modal==="add"||modal==="edit")&&form&&<Modal title={modal==="add"?"Add User":"Edit User"} onClose={()=>{setModal(null);setForm(null);}}>
+      <G2><Field label="Full Name *"><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={S.input}/></Field>
+        <Field label="Username *"><input value={form.username} onChange={e=>setForm({...form,username:e.target.value})} style={S.input}/></Field></G2>
+      <G2><Field label="Password *"><input type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} style={S.input}/></Field>
+        <Field label="Role"><select value={form.role} onChange={e=>setForm({...form,role:e.target.value})} style={S.select}><option value="staff">Staff</option><option value="admin">Admin</option></select></Field></G2>
+      <Field label="Access Permissions">
+        <div style={{background:C.bg,borderRadius:10,padding:14,display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+          {ALL_PERMS.map(p=><label key={p} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",cursor:"pointer",fontSize:"0.88rem",textTransform:"capitalize"}}>
+            <input type="checkbox" checked={!!form.permissions?.[p]} onChange={e=>setForm(f=>({...f,permissions:{...f.permissions,[p]:e.target.checked}}))} style={{width:15,height:15}}/>
+            {p==="fees"?"Fees & Payments":p}
+          </label>)}
+        </div>
+      </Field>
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={save} style={{...S.btnPrimary,flex:1}}>Save User</button>
+        <button onClick={()=>{setModal(null);setForm(null);}} style={{...S.btnGhost,flex:1}}>Cancel</button>
+      </div>
+    </Modal>}
+  </div>;
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
+function Settings({settings,setSettings,classTimings,setClassTimings,showToast}){
+  const[form,setForm]=useState({...settings});
+  const[tf,setTf]=useState(null);
+  const[modal,setModal]=useState(null);
+
+  function save(){setSettings(form);showToast("Settings saved");}
+  function saveTiming(){
+    if(modal==="addT")setClassTimings(p=>[...p,{...tf,id:gid()}]);
+    else setClassTimings(p=>p.map(t=>t.id===tf.id?tf:t));
+    showToast("Timing saved");setModal(null);setTf(null);
+  }
+
+  return <div>
+    <div style={S.card}><SecTitle title="Academy Information"/>
+      <G2><Field label="Academy Name"><input value={form.academyName} onChange={e=>setForm({...form,academyName:e.target.value})} style={S.input}/></Field>
+        <Field label="Phone"><input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={S.input}/></Field></G2>
+      <Field label="Address"><input value={form.address} onChange={e=>setForm({...form,address:e.target.value})} style={S.input}/></Field>
+      <Field label="Email"><input value={form.email} onChange={e=>setForm({...form,email:e.target.value})} style={S.input}/></Field>
+    </div>
+    <div style={S.card}><SecTitle title="Bank & Payment Details"/>
+      <G2><Field label="Bank Name"><input value={form.bankName||""} onChange={e=>setForm({...form,bankName:e.target.value})} style={S.input}/></Field>
+        <Field label="Account Title"><input value={form.accountTitle||""} onChange={e=>setForm({...form,accountTitle:e.target.value})} style={S.input}/></Field></G2>
+      <Field label="IBAN Number"><input value={form.iban||""} onChange={e=>setForm({...form,iban:e.target.value})} style={{...S.input,fontFamily:"monospace"}}/></Field>
+    </div>
+    <div style={S.card}><SecTitle title="Fee Settings"/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
+        <Field label="Due Date (Day)" mb={0}><input type="number" min={1} max={28} value={form.dueDateDay} onChange={e=>setForm({...form,dueDateDay:parseInt(e.target.value)})} style={S.input}/></Field>
+        <Field label="Late Fee Amount (Rs.)" mb={0}><input type="number" value={form.lateFeeAmount} onChange={e=>setForm({...form,lateFeeAmount:parseInt(e.target.value)||0})} style={S.input}/></Field>
+        <Field label="Auto Challan Day" mb={0}><input type="number" min={1} max={28} value={form.autoSendDay} onChange={e=>setForm({...form,autoSendDay:parseInt(e.target.value)})} style={S.input}/></Field>
+      </div>
+    </div>
+    <div style={S.card}><SecTitle title="Attendance — Late Rule"/>
+      <Field label="Mark Late After (minutes from class start time)">
+        <input type="number" min={1} max={120} value={form.lateMinutes} onChange={e=>setForm({...form,lateMinutes:parseInt(e.target.value)})} style={{...S.input,maxWidth:200}}/>
+      </Field>
+    </div>
+    <div style={S.card}><SecTitle title="WhatsApp — Twilio"/>
+      <Field label="Account SID"><input value={form.twilioSID} onChange={e=>setForm({...form,twilioSID:e.target.value})} style={S.input} placeholder="ACxxxxxxxxxxxxxxxx"/></Field>
+      <Field label="Auth Token"><input type="password" value={form.twilioToken} onChange={e=>setForm({...form,twilioToken:e.target.value})} style={S.input}/></Field>
+      <Field label="From Number (WhatsApp)"><input value={form.twilioFrom} onChange={e=>setForm({...form,twilioFrom:e.target.value})} style={S.input} placeholder="whatsapp:+14155238886"/></Field>
+    </div>
+    <div style={S.card}><SecTitle title="ZKTeco Biometric Device"/>
+      <G2><Field label="Device IP"><input value={form.zktIP} onChange={e=>setForm({...form,zktIP:e.target.value})} style={{...S.input,fontFamily:"monospace"}} placeholder="192.168.1.201"/></Field>
+        <Field label="Port"><input value={form.zktPort} onChange={e=>setForm({...form,zktPort:e.target.value})} style={{...S.input,fontFamily:"monospace"}} placeholder="4370"/></Field></G2>
+      <div style={{background:C.bg,borderRadius:8,padding:"10px 14px",fontSize:"0.8rem",color:C.textMid}}>Device Menu → Communication → Ethernet → IP Address</div>
+    </div>
+    <div style={S.card}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,borderBottom:`2px solid ${C.gold}`,paddingBottom:10}}>
+        <div style={{fontWeight:800,color:C.navy,fontSize:"0.9rem"}}>Class Timings</div>
+        <button onClick={()=>{setTf({class:"FSc Pre-Med",shift:"Morning",startTime:"08:00",endTime:"10:00"});setModal("addT");}} style={{...S.btnPrimary,padding:"6px 14px",fontSize:"0.82rem"}}>+ Add Timing</button>
+      </div>
+      <div style={{overflow:"hidden",borderRadius:8,border:`1px solid ${C.border}`}}>
+        <table><thead><tr>{["Class","Shift","Start","End","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{classTimings.map(t=><tr key={t.id} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            <td style={S.td}>{t.class}</td><td style={S.td}>{t.shift}</td>
+            <td style={S.td}><strong>{t.startTime}</strong></td><td style={S.td}><strong>{t.endTime}</strong></td>
+            <td style={S.td}><div style={{display:"flex",gap:5}}>
+              <button onClick={()=>{setTf({...t});setModal("editT");}} style={{...S.btnGhost,padding:"5px 9px",fontSize:"0.75rem"}}>Edit</button>
+              <button onClick={()=>setClassTimings(p=>p.filter(x=>x.id!==t.id))} style={{...S.btnDanger,padding:"5px 9px",fontSize:"0.75rem"}}>Remove</button>
+            </div></td>
+          </tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+    <button onClick={save} style={{...S.btnPrimary,padding:"13px 32px",fontSize:"0.95rem"}}>Save All Settings</button>
+    {(modal==="addT"||modal==="editT")&&tf&&<Modal title={modal==="addT"?"Add Class Timing":"Edit Timing"} onClose={()=>{setModal(null);setTf(null);}} width={420}>
+      <Field label="Class"><select value={tf.class} onChange={e=>setTf({...tf,class:e.target.value})} style={S.select}>{CLASSES.map(c=><option key={c}>{c}</option>)}</select></Field>
+      <Field label="Shift"><select value={tf.shift} onChange={e=>setTf({...tf,shift:e.target.value})} style={S.select}><option>Morning</option><option>Afternoon</option><option>Evening</option></select></Field>
+      <G2><Field label="Start Time"><input type="time" value={tf.startTime} onChange={e=>setTf({...tf,startTime:e.target.value})} style={S.input}/></Field>
+        <Field label="End Time"><input type="time" value={tf.endTime} onChange={e=>setTf({...tf,endTime:e.target.value})} style={S.input}/></Field></G2>
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={saveTiming} style={{...S.btnPrimary,flex:1}}>Save</button>
+        <button onClick={()=>{setModal(null);setTf(null);}} style={{...S.btnGhost,flex:1}}>Cancel</button>
+      </div>
+    </Modal>}
+  </div>;
+}
+
+// ── CHANGE PASSWORD ───────────────────────────────────────────────────────────
+function ChangePW({currentUser,users,setUsers,setCurrentUser,onClose,showToast}){
+  const[form,setForm]=useState({current:"",newPass:"",confirm:""});
+  const[err,setErr]=useState("");
+  function save(){
+    if(form.current!==currentUser.password){setErr("Current password incorrect");return;}
+    if(form.newPass.length<6){setErr("Min 6 characters");return;}
+    if(form.newPass!==form.confirm){setErr("Passwords do not match");return;}
+    const u={...currentUser,password:form.newPass};
+    setUsers(p=>p.map(x=>x.id===currentUser.id?u:x));setCurrentUser(u);
+    showToast("Password changed");onClose();
+  }
+  return <Modal title="Change Password" onClose={onClose} width={380}>
+    <Field label="Current Password"><input type="password" value={form.current} onChange={e=>setForm({...form,current:e.target.value})} style={S.input}/></Field>
+    <Field label="New Password"><input type="password" value={form.newPass} onChange={e=>setForm({...form,newPass:e.target.value})} style={S.input}/></Field>
+    <Field label="Confirm New Password"><input type="password" value={form.confirm} onChange={e=>setForm({...form,confirm:e.target.value})} style={S.input}/></Field>
+    {err&&<div style={{background:C.redBg,color:C.red,padding:"9px 12px",borderRadius:8,fontSize:"0.83rem",fontWeight:600,marginBottom:12}}>{err}</div>}
+    <div style={{display:"flex",gap:10}}>
+      <button onClick={save} style={{...S.btnPrimary,flex:1}}>Update Password</button>
+      <button onClick={onClose} style={{...S.btnGhost,flex:1}}>Cancel</button>
+    </div>
+  </Modal>;
+}
+
+
+function printAttendance(list, attendance, date, type, settings) {
+  const dayName = new Date(date).toLocaleDateString("en-PK", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const rows = list.map(item => {
+    const key = `${date}-${item.id}`;
+    const rec = attendance[key];
+    let status = "Not Marked", color = "#999", bg = "white";
+    if (rec) {
+      if (rec.status === "present") { status = "Present"; color = "#1a7a42"; bg = "#f0faf4"; }
+      else if (rec.status === "late") { status = "Late"; color = "#b07000"; bg = "#fffbf0"; }
+      else if (rec.status === "absent") { status = "Absent"; color = "#b02020"; bg = "#fff5f5"; }
+      else if (rec.status === "leave") { status = "Leave"; color = "#555"; bg = "#f5f5f5"; }
+    }
+    return `<tr style="background:${bg};">
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-weight:700;font-size:0.82rem;">${item.name}</td>
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-size:0.8rem;color:#555;">${type === "students" ? (item.fatherName || "—") : (item.subjects?.join(", ") || "—")}</td>
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-size:0.8rem;color:#555;">${type === "students" ? item.class : "Teacher"}</td>
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-weight:700;font-size:0.82rem;color:${color};">${status}</td>
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-size:0.78rem;color:#777;">${rec?.time || "—"}</td>
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;"></td>
+    </tr>`;
+  }).join("");
+
+  const present = list.filter(item => attendance[`${date}-${item.id}`]?.status === "present").length;
+  const late = list.filter(item => attendance[`${date}-${item.id}`]?.status === "late").length;
+  const absent = list.filter(item => attendance[`${date}-${item.id}`]?.status === "absent").length;
+
+  const win = window.open("", "_blank");
+  win.document.write(`<!DOCTYPE html><html><head><title>Attendance — ${dayName}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:"Segoe UI",sans-serif;background:white;color:#1a2740;}
+    .print-btn{background:#0f2744;color:white;border:none;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:0.88rem;font-weight:700;}
+    @media print{.no-print{display:none!important;}@page{size:A4;margin:10mm;}}
+  </style></head><body>
+  <div class="no-print" style="padding:12px 20px;background:#f0f4f8;border-bottom:2px solid #0f2744;display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-weight:700;color:#0f2744;">${type === "students" ? "Student" : "Teacher"} Attendance — ${dayName}</span>
+    <button class="print-btn" onclick="window.print()">Print Attendance</button>
+  </div>
+
+  <!-- Header -->
+  <div style="background:#0f2744;color:white;padding:14px 24px;display:flex;align-items:center;gap:16px;">
+    <img src="${LOGO}" style="height:48px;"/>
+    <div style="flex:1;">
+      <div style="font-size:1rem;font-weight:900;letter-spacing:1px;">${settings.academyName.toUpperCase()}</div>
+      <div style="opacity:0.65;font-size:0.72rem;margin-top:2px;">${type === "students" ? "STUDENT" : "TEACHER"} ATTENDANCE REGISTER</div>
+      <div style="opacity:0.65;font-size:0.7rem;">${settings.address}</div>
+    </div>
+    <div style="text-align:right;background:rgba(255,255,255,0.1);padding:10px 16px;border-radius:8px;">
+      <div style="font-size:0.6rem;opacity:0.7;text-transform:uppercase;">Date</div>
+      <div style="font-size:0.88rem;font-weight:900;">${dayName}</div>
+    </div>
+  </div>
+
+  <div style="padding:16px 24px;">
+    <!-- Summary -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+      ${[["Total", list.length, "#0f2744", "#e8f0fb"], ["Present", present, "#1a7a42", "#e6f4ec"], ["Late", late, "#b07000", "#fff4e0"], ["Absent", absent, "#b02020", "#fde8e8"]]
+        .map(([l, v, c, bg]) => `<div style="background:${bg};border-radius:8px;padding:10px 14px;text-align:center;border:1.5px solid ${c};">
+          <div style="font-size:0.65rem;color:${c};font-weight:700;text-transform:uppercase;">${l}</div>
+          <div style="font-size:1.5rem;font-weight:900;color:${c};">${v}</div>
+        </div>`).join("")}
+    </div>
+
+    <!-- Table -->
+    <table style="width:100%;border:1.5px solid #d0dce8;border-radius:8px;overflow:hidden;">
+      <thead><tr style="background:#0f2744;color:white;">
+        <th style="padding:9px 12px;text-align:left;font-size:0.75rem;">Name</th>
+        <th style="padding:9px 12px;text-align:left;font-size:0.75rem;">${type === "students" ? "Father Name" : "Subjects"}</th>
+        <th style="padding:9px 12px;text-align:left;font-size:0.75rem;">${type === "students" ? "Class" : "Role"}</th>
+        <th style="padding:9px 12px;text-align:left;font-size:0.75rem;">Status</th>
+        <th style="padding:9px 12px;text-align:left;font-size:0.75rem;">Time</th>
+        <th style="padding:9px 12px;text-align:left;font-size:0.75rem;">Signature</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+
+    <!-- Signatures -->
+    <div style="display:flex;justify-content:space-between;margin-top:24px;padding-top:14px;border-top:2px solid #d0dce8;">
+      <div style="text-align:center;min-width:150px;">
+        <div style="border-top:1.5px solid #333;padding-top:5px;margin-top:32px;font-size:0.72rem;color:#555;">Prepared By</div>
+      </div>
+      <div style="text-align:center;min-width:150px;">
+        <div style="border-top:1.5px solid #333;padding-top:5px;margin-top:32px;font-size:0.72rem;color:#555;">Academy Administration</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;text-align:center;font-size:0.62rem;color:#aaa;">${settings.academyName} — ${settings.address} — Printed: ${new Date().toLocaleString()}</div>
+  </div>
+  </body></html>`);
+  win.document.close();
+}
+
+ReactDOM.render(<App/>, document.getElementById("root"));
+</script>
+</body>
+</html>
