@@ -84,7 +84,6 @@ function buildFees(student,existing={}){
   for(let y=ey;y<=CY;y++){
     const s=y===ey?em:0,e=y===CY?CM:11;
     for(let m=s;m<=e;m++){
-      if(y===ey&&m===em) continue;
       const k=`${y}-${m}`;
       if(!fees[k]) fees[k]={year:y,month:m,totalFee,paid:0,discount:0,status:"unpaid",paidDate:null,challanNo:0};
     }
