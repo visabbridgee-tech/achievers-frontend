@@ -995,10 +995,75 @@ function Attendance({students,teachers,attendance,setAttendance,teacherAtt,setTe
 }
 
 // ── REPORTS ───────────────────────────────────────────────────────────────────
+function printReportPDF(title,headers,rows,summaryCards,settings){
+  const cardHtml=summaryCards.map(([l,v,c])=>`<div style="background:${c==="navy"?"#e8f0fb":c==="green"?"#e6f4ec":c==="red"?"#fde8e8":"#fff4e0"};border-radius:8px;padding:12px 16px;text-align:center;border-top:3px solid ${c==="navy"?"#0f2744":c==="green"?"#1a7a42":c==="red"?"#b02020":"#b07000"};"><div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;color:${c==="navy"?"#0f2744":c==="green"?"#1a7a42":c==="red"?"#b02020":"#b07000"};margin-bottom:4px;">${l}</div><div style="font-size:1.2rem;font-weight:900;color:${c==="navy"?"#0f2744":c==="green"?"#1a7a42":c==="red"?"#b02020":"#b07000"};">${v}</div></div>`).join("");
+  const headerHtml=headers.map(h=>`<th style="padding:8px 12px;text-align:left;font-size:0.75rem;">${h}</th>`).join("");
+  const rowHtml=rows.map(r=>`<tr style="border-bottom:1px solid #eee;">${r.map((c,i)=>`<td style="padding:8px 12px;font-size:0.82rem;">${c}</td>`).join("")}</tr>`).join("");
+  const win=window.open("","_blank");
+  win.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>*{box-sizing:border-box;}body{font-family:"Segoe UI",sans-serif;margin:0;}@media print{.np{display:none}@page{size:A4;margin:10mm;}}</style></head><body>
+  <div class="np" style="padding:10px 20px;background:#f0f4f8;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;color:#0f2744;">${title}</span><button onclick="window.print()" style="background:#0f2744;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:700;">Print PDF</button></div>
+  <div style="background:#0f2744;color:white;padding:14px 24px;"><div style="font-size:1rem;font-weight:900;">${settings.academyName.toUpperCase()}</div><div style="opacity:0.65;font-size:0.72rem;">${title} — Generated: ${new Date().toLocaleString()}</div></div>
+  <div style="padding:16px 24px;">
+    ${summaryCards.length?`<div style="display:grid;grid-template-columns:repeat(${summaryCards.length},1fr);gap:10px;margin-bottom:16px;">${cardHtml}</div>`:""}
+    <table style="width:100%;border:1px solid #d0dce8;border-radius:8px;overflow:hidden;">
+      <thead><tr style="background:#0f2744;color:white;">${headerHtml}</tr></thead>
+      <tbody>${rowHtml}</tbody>
+    </table>
+    <div style="margin-top:20px;text-align:center;font-size:0.65rem;color:#aaa;">${settings.academyName} — ${settings.address}</div>
+  </div></body></html>`);
+  win.document.close();
+}
+
+function printIndividualAttPDF(person,records,type,settings){
+  const p=records.filter(r=>r.status==="present").length;
+  const l=records.filter(r=>r.status==="late").length;
+  const a=records.filter(r=>r.status==="absent").length;
+  const rate=records.length>0?Math.round(((p+l)/records.length)*100):0;
+  const rows=records.map(r=>{
+    const c=r.status==="present"?"#1a7a42":r.status==="late"?"#b07000":r.status==="absent"?"#b02020":"#555";
+    const bg=r.status==="present"?"#f0faf4":r.status==="late"?"#fffbf0":r.status==="absent"?"#fff5f5":"white";
+    return `<tr style="background:${bg};"><td style="padding:6px 12px;border-bottom:1px solid #eee;font-weight:600;">${r.date}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;">${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(r.date).getDay()]}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;font-weight:700;color:${c};">${r.status?r.status.charAt(0).toUpperCase()+r.status.slice(1):"—"}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;">${r.in_time||"—"}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;">${r.out_time||"—"}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;">${r.total_hours||"—"}</td></tr>`;
+  }).join("");
+  const win=window.open("","_blank");
+  win.document.write(`<!DOCTYPE html><html><head><title>Attendance — ${person.name}</title><style>*{box-sizing:border-box;}body{font-family:"Segoe UI",sans-serif;margin:0;}@media print{.np{display:none}@page{size:A4;margin:10mm;}}</style></head><body>
+  <div class="np" style="padding:10px 20px;background:#f0f4f8;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;color:#0f2744;">${person.name} — Attendance Report</span><button onclick="window.print()" style="background:#0f2744;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:700;">Print PDF</button></div>
+  <div style="background:#0f2744;color:white;padding:14px 24px;display:flex;align-items:center;gap:16px;"><div><div style="font-size:1rem;font-weight:900;">${settings.academyName.toUpperCase()}</div><div style="opacity:0.65;font-size:0.72rem;">${type.toUpperCase()} INDIVIDUAL ATTENDANCE REPORT</div><div style="opacity:0.55;font-size:0.7rem;">${settings.address}</div></div></div>
+  <div style="padding:16px 24px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div style="border:1px solid #d0dce8;border-radius:8px;padding:12px 16px;">
+        <div style="font-size:0.75rem;font-weight:700;color:#0f2744;margin-bottom:8px;text-transform:uppercase;">Information</div>
+        ${[["Name",person.name],type==="Student"?["Father",person.fatherName||"—"]:["Phone",person.phone||"—"],[type==="Student"?"Class":"Role",type==="Student"?person.class:"Teacher"]].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #eee;font-size:0.82rem;"><span style="color:#7a8ba0;">${k}</span><span style="font-weight:700;">${v}</span></div>`).join("")}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+        ${[["Present",p,"#1a7a42","#e6f4ec"],["Late",l,"#b07000","#fff4e0"],["Absent",a,"#b02020","#fde8e8"],["Attendance Rate",rate+"%","#0f2744","#e8f0fb"]].map(([n,v,c,bg])=>`<div style="background:${bg};border-radius:8px;padding:10px;text-align:center;"><div style="font-size:0.62rem;color:${c};font-weight:700;text-transform:uppercase;margin-bottom:2px;">${n}</div><div style="font-size:1.3rem;font-weight:900;color:${c};">${v}</div></div>`).join("")}
+      </div>
+    </div>
+    <table style="width:100%;border:1px solid #d0dce8;border-radius:8px;overflow:hidden;">
+      <thead><tr style="background:#0f2744;color:white;">
+        <th style="padding:8px 12px;text-align:left;font-size:0.75rem;">Date</th>
+        <th style="padding:8px 12px;text-align:left;font-size:0.75rem;">Day</th>
+        <th style="padding:8px 12px;text-align:left;font-size:0.75rem;">Status</th>
+        <th style="padding:8px 12px;text-align:left;font-size:0.75rem;">Sign In</th>
+        <th style="padding:8px 12px;text-align:left;font-size:0.75rem;">Sign Out</th>
+        <th style="padding:8px 12px;text-align:left;font-size:0.75rem;">Hours</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="display:flex;justify-content:space-between;margin-top:24px;padding-top:14px;border-top:2px solid #d0dce8;">
+      <div style="text-align:center;min-width:140px;"><div style="border-top:1px solid #333;padding-top:5px;margin-top:32px;font-size:0.72rem;color:#555;">Signature</div><div style="font-size:0.7rem;color:#aaa;">${person.name}</div></div>
+      <div style="text-align:center;min-width:140px;"><div style="border-top:1px solid #333;padding-top:5px;margin-top:32px;font-size:0.72rem;color:#555;">Administration</div><div style="font-size:0.7rem;color:#aaa;">${settings.academyName}</div></div>
+    </div>
+    <div style="margin-top:10px;text-align:center;font-size:0.62rem;color:#aaa;">Generated: ${new Date().toLocaleString()}</div>
+  </div></body></html>`);
+  win.document.close();
+}
+
 function Reports({students,teachers,attendance,teacherAtt,settings}){
   const[rType,setRType]=useState("fee");
   const[month,setMonth]=useState(CM);
   const[year,setYear]=useState(CY);
+  const[selStudent,setSelStudent]=useState("");
+  const[selTeacher,setSelTeacher]=useState("");
   const active=students.filter(s=>s.active);
   const key=`${year}-${month}`;
 
@@ -1048,6 +1113,14 @@ function Reports({students,teachers,attendance,teacherAtt,settings}){
             <div style={{fontSize:"1.3rem",fontWeight:900,color:c}}>Rs. {v}</div>
           </div>)}
       </div>
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+        <button onClick={()=>{
+          const headers=["Student","Class","Fee","Discount","Paid","Balance","Status"];
+          const rows=feeReport.map(r=>[r.name,r.class,`Rs.${fmt(r.fee)}`,r.discount>0?`Rs.${fmt(r.discount)}`:"—",`Rs.${fmt(r.paid)}`,`Rs.${fmt(r.balance)}`,r.status.toUpperCase()]);
+          const cards=[["Total Billed",`Rs.${fmt(tFee)}`,"navy"],["Collected",`Rs.${fmt(tPaid)}`,"green"],["Outstanding",`Rs.${fmt(tBal)}`,"red"]];
+          printReportPDF(`Fee Collection Report — ${MONTHS[month]} ${year}`,headers,rows,cards,settings);
+        }} style={{...S.btnGold,padding:"8px 16px",fontSize:"0.82rem"}}>🖨 Print Report PDF</button>
+      </div>
       <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
         <table><thead><tr>{["Student","Class","Fee","Discount","Paid","Balance","Status"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
           <tbody>{feeReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
@@ -1062,38 +1135,109 @@ function Reports({students,teachers,attendance,teacherAtt,settings}){
       </div>
     </div>}
 
-    {rType==="teacher"&&<div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-      <table><thead><tr>{["Teacher","Students","Revenue","Commission Due"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-        <tbody>{teacherReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
-          <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td>
-          <td style={S.td}>{r.students}</td>
-          <td style={S.td}>Rs. {fmt(r.revenue)}</td>
-          <td style={S.td}><span style={{fontWeight:900,color:C.gold,fontSize:"1rem"}}>Rs. {fmt(r.commission)}</span></td>
-        </tr>)}</tbody>
-      </table>
+    {rType==="teacher"&&<div>
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+        <button onClick={()=>{
+          const headers=["Teacher","Students","Revenue","Commission Due"];
+          const rows=teacherReport.map(r=>[r.name,r.students,`Rs.${fmt(r.revenue)}`,`Rs.${fmt(r.commission)}`]);
+          printReportPDF(`Teacher Commission Report — ${MONTHS[month]} ${year}`,headers,rows,[],settings);
+        }} style={{...S.btnGold,padding:"8px 16px",fontSize:"0.82rem"}}>🖨 Print Report PDF</button>
+      </div>
+      <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+        <table><thead><tr>{["Teacher","Students","Revenue","Commission Due"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{teacherReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td>
+            <td style={S.td}>{r.students}</td>
+            <td style={S.td}>Rs. {fmt(r.revenue)}</td>
+            <td style={S.td}><span style={{fontWeight:900,color:C.gold,fontSize:"1rem"}}>Rs. {fmt(r.commission)}</span></td>
+          </tr>)}</tbody>
+        </table>
+      </div>
     </div>}
 
-    {rType==="attendance"&&<div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-      <table><thead><tr>{["Student","Class","Present","Late","Absent","Total","Rate"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-        <tbody>{attReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
-          <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td><td style={S.td}>{r.class}</td>
-          <td style={S.td}><span style={{color:C.green,fontWeight:700}}>{r.present}</span></td>
-          <td style={S.td}><span style={{color:C.yellow,fontWeight:700}}>{r.late}</span></td>
-          <td style={S.td}><span style={{color:C.red,fontWeight:700}}>{r.absent}</span></td>
-          <td style={S.td}>{r.total}</td>
-          <td style={S.td}><div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{flex:1,background:C.bg,borderRadius:4,height:6,overflow:"hidden"}}><div style={{width:`${r.rate}%`,background:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,height:"100%"}}/></div>
-            <span style={{fontWeight:700,color:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,minWidth:34}}>{r.rate}%</span>
-          </div></td>
-        </tr>)}</tbody>
-      </table>
+    {rType==="attendance"&&<div>
+      <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"center",flexWrap:"wrap"}}>
+        <select value={selStudent} onChange={e=>setSelStudent(e.target.value)} style={{...S.select,width:"auto",minWidth:220}}>
+          <option value="">— All Students (Summary) —</option>
+          {active.map(s=><option key={s.id} value={s.id}>{s.name} ({s.class})</option>)}
+        </select>
+        {selStudent&&<button onClick={()=>{
+          const s=active.find(x=>x.id===selStudent);
+          if(!s)return;
+          const recs=Object.entries(attendance).filter(([k])=>k.endsWith(`-${s.id}`)).map(([k,v])=>({date:k.split(`-${s.id}`)[0],...v})).sort((a,b)=>b.date.localeCompare(a.date));
+          printIndividualAttPDF(s,recs,"Student",settings);
+        }} style={{...S.btnGold,padding:"8px 16px",fontSize:"0.82rem"}}>🖨 Print Individual PDF</button>}
+        {!selStudent&&<button onClick={()=>{
+          const headers=["Student","Class","Present","Late","Absent","Total","Rate"];
+          const rows=attReport.map(r=>[r.name,r.class,r.present,r.late,r.absent,r.total,r.rate+"%"]);
+          printReportPDF("Student Attendance Summary Report",headers,rows,[],settings);
+        }} style={{...S.btnGold,padding:"8px 16px",fontSize:"0.82rem"}}>🖨 Print All PDF</button>}
+      </div>
+      {!selStudent&&<div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+        <table><thead><tr>{["Student","Class","Present","Late","Absent","Total","Rate"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{attReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td><td style={S.td}>{r.class}</td>
+            <td style={S.td}><span style={{color:C.green,fontWeight:700}}>{r.present}</span></td>
+            <td style={S.td}><span style={{color:C.yellow,fontWeight:700}}>{r.late}</span></td>
+            <td style={S.td}><span style={{color:C.red,fontWeight:700}}>{r.absent}</span></td>
+            <td style={S.td}>{r.total}</td>
+            <td style={S.td}><div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{flex:1,background:C.bg,borderRadius:4,height:6,overflow:"hidden"}}><div style={{width:`${r.rate}%`,background:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,height:"100%"}}/></div>
+              <span style={{fontWeight:700,color:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,minWidth:34}}>{r.rate}%</span>
+            </div></td>
+          </tr>)}</tbody>
+        </table>
+      </div>}
+      {selStudent&&(()=>{
+        const s=active.find(x=>x.id===selStudent);
+        if(!s)return null;
+        const recs=Object.entries(attendance).filter(([k])=>k.endsWith(`-${s.id}`)).map(([k,v])=>({date:k.split(`-${s.id}`)[0],...v})).sort((a,b)=>b.date.localeCompare(a.date));
+        const p=recs.filter(r=>r.status==="present").length,l=recs.filter(r=>r.status==="late").length,a=recs.filter(r=>r.status==="absent").length;
+        return <div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
+            {[["Present",p,C.green,C.greenBg],["Late",l,C.yellow,C.yellowBg],["Absent",a,C.red,C.redBg],["Rate",recs.length>0?Math.round(((p+l)/recs.length)*100)+"%":"—",C.navy,C.blueBg]].map(([lab,val,c,bg])=>
+              <div key={lab} style={{background:bg,borderRadius:10,padding:"12px 16px",borderLeft:`3px solid ${c}`}}>
+                <div style={{fontSize:"0.7rem",color:c,fontWeight:700,textTransform:"uppercase"}}>{lab}</div>
+                <div style={{fontSize:"1.5rem",fontWeight:900,color:c}}>{val}</div>
+              </div>)}
+          </div>
+          <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+            <table><thead><tr>{["Date","Day","Status","Sign In","Sign Out","Hours"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+              <tbody>{recs.map((r,i)=>{const c=r.status==="present"?C.green:r.status==="late"?C.yellow:r.status==="absent"?C.red:C.textLight;return<tr key={i} style={{background:r.status==="present"?C.greenBg:r.status==="late"?C.yellowBg:r.status==="absent"?C.redBg:""}}>
+                <td style={S.td}><b>{r.date}</b></td>
+                <td style={S.td}>{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(r.date).getDay()]}</td>
+                <td style={S.td}><span style={{fontWeight:700,color:c,textTransform:"capitalize"}}>{r.status||"—"}</span></td>
+                <td style={S.td}>{r.in_time||"—"}</td><td style={S.td}>{r.out_time||"—"}</td><td style={S.td}>{r.total_hours||"—"}</td>
+              </tr>;})}
+              </tbody>
+            </table>
+          </div>
+        </div>;
+      })()}
     </div>}
 
     {rType==="teacherAtt"&&<div>
-      <div style={{...S.card,background:C.yellowBg,borderLeft:`4px solid ${C.yellow}`,padding:"12px 16px",marginBottom:14}}>
-        <div style={{fontWeight:700,color:C.yellow,fontSize:"0.85rem"}}>Teachers with late arrivals are highlighted. No salary deduction — record only.</div>
+      <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"center",flexWrap:"wrap"}}>
+        <select value={selTeacher} onChange={e=>setSelTeacher(e.target.value)} style={{...S.select,width:"auto",minWidth:220}}>
+          <option value="">— All Teachers (Summary) —</option>
+          {teachers.filter(t=>t.active).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+        {selTeacher&&<button onClick={()=>{
+          const t=teachers.find(x=>x.id===selTeacher);
+          if(!t)return;
+          const recs=Object.entries(teacherAtt).filter(([k])=>k.endsWith(`-${t.id}`)).map(([k,v])=>({date:k.split(`-${t.id}`)[0],...v})).sort((a,b)=>b.date.localeCompare(a.date));
+          printIndividualAttPDF(t,recs,"Teacher",settings);
+        }} style={{...S.btnGold,padding:"8px 16px",fontSize:"0.82rem"}}>🖨 Print Individual PDF</button>}
+        {!selTeacher&&<button onClick={()=>{
+          const headers=["Teacher","Present","Late","Absent","Total","Rate"];
+          const rows=tAttReport.map(r=>[r.name,r.present,r.late,r.absent,r.total,r.rate+"%"]);
+          printReportPDF("Teacher Attendance Summary Report",headers,rows,[],settings);
+        }} style={{...S.btnGold,padding:"8px 16px",fontSize:"0.82rem"}}>🖨 Print All PDF</button>}
       </div>
-      <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <div style={{...S.card,background:C.yellowBg,borderLeft:`4px solid ${C.yellow}`,padding:"12px 16px",marginBottom:14}}>
+        <div style={{fontWeight:700,color:C.yellow,fontSize:"0.85rem"}}>Late arrivals highlighted. No salary deduction — record only.</div>
+      </div>
+      {!selTeacher&&<div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
         <table><thead><tr>{["Teacher","Present","Late","Absent","Total","Rate"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
           <tbody>{tAttReport.map((r,i)=><tr key={i} style={{background:r.late>0?"#fffde7":""}} onMouseEnter={e=>e.currentTarget.style.background=r.late>0?"#fff9c4":C.bg} onMouseLeave={e=>e.currentTarget.style.background=r.late>0?"#fffde7":""}>
             <td style={S.td}><span style={{fontWeight:700,color:r.late>0?C.red:C.text}}>{r.name}{r.late>0?" ⚠":""}</span></td>
@@ -1107,7 +1251,33 @@ function Reports({students,teachers,attendance,teacherAtt,settings}){
             </div></td>
           </tr>)}</tbody>
         </table>
-      </div>
+      </div>}
+      {selTeacher&&(()=>{
+        const t=teachers.find(x=>x.id===selTeacher);
+        if(!t)return null;
+        const recs=Object.entries(teacherAtt).filter(([k])=>k.endsWith(`-${t.id}`)).map(([k,v])=>({date:k.split(`-${t.id}`)[0],...v})).sort((a,b)=>b.date.localeCompare(a.date));
+        const p=recs.filter(r=>r.status==="present").length,l=recs.filter(r=>r.status==="late").length,a=recs.filter(r=>r.status==="absent").length;
+        return <div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
+            {[["Present",p,C.green,C.greenBg],["Late",l,C.yellow,C.yellowBg],["Absent",a,C.red,C.redBg],["Rate",recs.length>0?Math.round(((p+l)/recs.length)*100)+"%":"—",C.navy,C.blueBg]].map(([lab,val,c,bg])=>
+              <div key={lab} style={{background:bg,borderRadius:10,padding:"12px 16px",borderLeft:`3px solid ${c}`}}>
+                <div style={{fontSize:"0.7rem",color:c,fontWeight:700,textTransform:"uppercase"}}>{lab}</div>
+                <div style={{fontSize:"1.5rem",fontWeight:900,color:c}}>{val}</div>
+              </div>)}
+          </div>
+          <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+            <table><thead><tr>{["Date","Day","Status","Sign In","Sign Out","Hours"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+              <tbody>{recs.map((r,i)=>{const c=r.status==="present"?C.green:r.status==="late"?C.yellow:r.status==="absent"?C.red:C.textLight;return<tr key={i} style={{background:r.status==="present"?C.greenBg:r.status==="late"?C.yellowBg:r.status==="absent"?C.redBg:""}}>
+                <td style={S.td}><b>{r.date}</b></td>
+                <td style={S.td}>{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(r.date).getDay()]}</td>
+                <td style={S.td}><span style={{fontWeight:700,color:c,textTransform:"capitalize"}}>{r.status||"—"}</span></td>
+                <td style={S.td}>{r.in_time||"—"}</td><td style={S.td}>{r.out_time||"—"}</td><td style={S.td}>{r.total_hours||"—"}</td>
+              </tr>;})}
+              </tbody>
+            </table>
+          </div>
+        </div>;
+      })()}
     </div>}
   </div>;
 }
