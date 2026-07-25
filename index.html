@@ -112,7 +112,7 @@ const NAV=[
   {id:"teachers",label:"Teachers",perm:"teachers"},
   {id:"fees",label:"Fees & Payments",perm:"fees"},
   {id:"challans",label:"Challans",perm:"challans"},
-  {id:"attendance",label:"Attendance",perm:"attendance"},
+  {id:"attendance",label:"Attendance",perm:"attendance"},{id:"schedule",label:"Schedule",perm:"attendance"},
   {id:"reports",label:"Reports",perm:"reports"},
   {id:"users",label:"User Management",perm:"users"},
   {id:"settings",label:"Settings",perm:"settings"},
@@ -400,6 +400,13 @@ function App(){
   const[teachers,setTeachers]=useState(()=>loadLS("aa_teachers",INIT_TEACHERS));
   const[attendance,setAttendance]=useState(()=>loadLS("aa_att",{}));
   const[teacherAtt,setTeacherAtt]=useState(()=>loadLS("aa_tatt",{}));
+  const DEF_TIMINGS_V5=[
+  {id:gid(),class:"FSc Pre-Med",day:"Monday",shift:"Morning",startTime:"08:00",endTime:"10:00"},
+  {id:gid(),class:"FSc Pre-Med",day:"Wednesday",shift:"Morning",startTime:"08:00",endTime:"10:00"},
+  {id:gid(),class:"FSc Pre-Med",day:"Friday",shift:"Morning",startTime:"08:00",endTime:"10:00"},
+  {id:gid(),class:"Class 9",day:"Tuesday",shift:"Evening",startTime:"16:00",endTime:"18:00"},
+  {id:gid(),class:"Class 9",day:"Thursday",shift:"Evening",startTime:"16:00",endTime:"18:00"},
+];
   const[classTimings,setClassTimings]=useState(()=>loadLS("aa_timings",[
     {id:gid(),class:"FSc Pre-Med",shift:"Morning",startTime:"08:00",endTime:"10:00"},
     {id:gid(),class:"Class 9",shift:"Evening",startTime:"16:00",endTime:"18:00"},
@@ -435,10 +442,7 @@ function App(){
           <Field label="Password"><input type="password" value={lf.p} onChange={e=>setLf({...lf,p:e.target.value})} onKeyDown={e=>e.key==="Enter"&&login()} style={S.input} placeholder="Enter password"/></Field>
           {le&&<div style={{background:C.redBg,color:C.red,padding:"10px 14px",borderRadius:8,fontSize:"0.83rem",fontWeight:600,marginBottom:16}}>{le}</div>}
           <button onClick={login} style={{...S.btnPrimary,width:"100%",padding:14,fontSize:"0.95rem"}}>Sign In</button>
-          <div style={{marginTop:20,padding:"12px 14px",background:C.bg,borderRadius:9,fontSize:"0.78rem",color:C.textLight,borderLeft:`3px solid ${C.gold}`}}>
-            <strong style={{color:C.navy}}>Default:</strong> superadmin / Academy@2024<br/>
-            <span style={{fontSize:"0.72rem"}}>Change password after first login</span>
-          </div>
+          
         </div>
       </div>
       <Toast toast={toast}/>
@@ -489,11 +493,12 @@ function App(){
 
         <div style={{flex:1,padding:"20px",maxWidth:1300,width:"100%",margin:"0 auto",boxSizing:"border-box"}}>
           {tab==="dashboard"&&<Dashboard students={students} teachers={teachers} attendance={attendance} settings={settings} wpLog={wpLog} classTimings={classTimings}/>}
-          {tab==="students"&&canAccess("students")&&<Students students={students} setStudents={setStudents} teachers={teachers} settings={settings} showToast={showToast}/>}
-          {tab==="teachers"&&canAccess("teachers")&&<Teachers teachers={teachers} setTeachers={setTeachers} students={students} teacherAtt={teacherAtt} settings={settings} showToast={showToast}/>}
-          {tab==="fees"&&canAccess("fees")&&<Fees students={students} setStudents={setStudents} teachers={teachers} settings={settings} setSettings={setSettings} showToast={showToast}/>}
+          {tab==="students"&&canAccess("students")&&<Students students={students} setStudents={setStudents} teachers={teachers} settings={settings} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
+          {tab==="teachers"&&canAccess("teachers")&&<Teachers teachers={teachers} setTeachers={setTeachers} students={students} teacherAtt={teacherAtt} settings={settings} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
+          {tab==="fees"&&canAccess("fees")&&<Fees students={students} setStudents={setStudents} teachers={teachers} settings={settings} setSettings={setSettings} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
           {tab==="challans"&&canAccess("challans")&&<Challans students={students} teachers={teachers} settings={settings} wpLog={wpLog} setWpLog={setWpLog} showToast={showToast}/>}
-          {tab==="attendance"&&canAccess("attendance")&&<Attendance students={students} teachers={teachers} attendance={attendance} setAttendance={setAttendance} teacherAtt={teacherAtt} setTeacherAtt={setTeacherAtt} classTimings={classTimings} settings={settings} showToast={showToast} setWpLog={setWpLog}/>}
+          {tab==="schedule"&&canAccess("attendance")&&<Schedule classTimings={classTimings} setClassTimings={setClassTimings} students={students} showToast={showToast}/> }
+          {tab==="attendance"&&canAccess("attendance")&&<Attendance students={students} teachers={teachers} attendance={attendance} setAttendance={setAttendance} teacherAtt={teacherAtt} setTeacherAtt={setTeacherAtt} classTimings={classTimings} settings={settings} showToast={showToast} setWpLog={setWpLog} isSA={currentUser.role==="superadmin"}/>}
           {tab==="reports"&&canAccess("reports")&&<Reports students={students} teachers={teachers} attendance={attendance} teacherAtt={teacherAtt} settings={settings}/>}
           {tab==="users"&&canAccess("users")&&<Users users={users} setUsers={setUsers} currentUser={currentUser} showToast={showToast}/>}
           {tab==="settings"&&canAccess("settings")&&<Settings settings={settings} setSettings={setSettings} classTimings={classTimings} setClassTimings={setClassTimings} showToast={showToast}/>}
@@ -572,7 +577,7 @@ function Dashboard({students,teachers,attendance,settings,wpLog,classTimings}){
 }
 
 // ── STUDENTS ──────────────────────────────────────────────────────────────────
-function Students({students,setStudents,teachers,settings,showToast}){
+function Students({students,setStudents,teachers,settings,showToast,isSA}){
   const[search,setSearch]=useState("");
   const[fc,setFc]=useState("All");
   const[modal,setModal]=useState(null);
@@ -680,7 +685,7 @@ function Students({students,setStudents,teachers,settings,showToast}){
 }
 
 // ── TEACHERS ──────────────────────────────────────────────────────────────────
-function Teachers({teachers,setTeachers,students,teacherAtt,settings,showToast}){
+function Teachers({teachers,setTeachers,students,teacherAtt,settings,showToast,isSA}){
   const[modal,setModal]=useState(null);
   const[form,setForm]=useState(null);
   const[slipModal,setSlipModal]=useState(null);
@@ -764,7 +769,7 @@ function Teachers({teachers,setTeachers,students,teacherAtt,settings,showToast})
 }
 
 // ── FEES ──────────────────────────────────────────────────────────────────────
-function Fees({students,setStudents,teachers,settings,setSettings,showToast}){
+function Fees({students,setStudents,teachers,settings,setSettings,showToast,isSA}){
   const[selId,setSelId]=useState("");
   const[modal,setModal]=useState(null);
   const[pf,setPf]=useState({amount:"",discount:"",feeKey:""});
@@ -818,7 +823,7 @@ function Fees({students,setStudents,teachers,settings,setSettings,showToast}){
                 <td style={S.td}><span style={{color:bal>0?C.red:C.green,fontWeight:700}}>Rs. {fmt(bal)}</span></td>
                 <td style={S.td}><Badge status={fee.status}/></td>
                 <td style={S.td}><div style={{display:"flex",gap:5}}>
-                  {fee.status!=="paid"&&<button onClick={()=>{setPf({amount:String(bal),discount:String(fee.discount),feeKey:key});setModal("pay");}} style={{...S.btnGreen,padding:"5px 9px",fontSize:"0.75rem"}}>Pay</button>}
+                  {(fee.status!=="paid"||isSA)&&<button onClick={()=>{setPf({amount:String(bal),discount:String(fee.discount||0),arrears:String(fee.arrears||0),feeKey:key});setModal("pay");}} style={{...S.btnGreen,padding:"5px 9px",fontSize:"0.75rem"}}>{isSA&&fee.status==="paid"?"Edit":"Pay"}</button>}
                   <button onClick={()=>printChallan(sel,fee,key,settings,teachers)} style={{...S.btnGold,padding:"5px 9px",fontSize:"0.75rem"}}>Challan</button>
                 </div></td>
               </tr>;
@@ -886,7 +891,7 @@ function Challans({students,teachers,settings,wpLog,setWpLog,showToast}){
 }
 
 // ── ATTENDANCE ────────────────────────────────────────────────────────────────
-function Attendance({students,teachers,attendance,setAttendance,teacherAtt,setTeacherAtt,classTimings,settings,showToast,setWpLog}){
+function Attendance({students,teachers,attendance,setAttendance,teacherAtt,setTeacherAtt,classTimings,settings,showToast,setWpLog,isSA}){
   const[viewDate,setViewDate]=useState(new Date().toISOString().split("T")[0]);
   const[scanning,setScanning]=useState(false);
   const[activeTab,setActiveTab]=useState("students");
@@ -927,6 +932,7 @@ function Attendance({students,teachers,attendance,setAttendance,teacherAtt,setTe
       </div>
       <button onClick={simulateScan} disabled={scanning} style={{...S.btnPrimary,opacity:scanning?0.7:1}}>{scanning?"Scanning...":"Simulate Biometric"}</button>
       <button onClick={()=>printAttendance(list,attSrc,viewDate,activeTab,settings)} style={S.btnGold}>Print Attendance</button>
+      {isSA&&<button onClick={()=>{if(window.confirm("Clear all attendance for "+viewDate+"?")){{const keys=Object.keys(activeTab==="students"?attendance:teacherAtt).filter(k=>k.startsWith(viewDate));if(activeTab==="students"){setAttendance(p=>{const n={...p};keys.forEach(k=>delete n[k]);return n;});}else{setTeacherAtt(p=>{const n={...p};keys.forEach(k=>delete n[k]);return n;});}}showToast("Attendance cleared for "+viewDate);}}} style={{...S.btnDanger,padding:"9px 14px",fontSize:"0.82rem"}}>Clear Day</button>}
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:14}}>
       {[["Present",summary.present,C.green,C.greenBg],["Late",summary.late,C.yellow,C.yellowBg],["Absent",summary.absent,C.red,C.redBg]].map(([l,v,c,bg])=>
@@ -936,20 +942,44 @@ function Attendance({students,teachers,attendance,setAttendance,teacherAtt,setTe
         </div>)}
     </div>
     <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-      <table><thead><tr>{["Name",activeTab==="students"?"Class":"Subjects","Status","Time","Mark Attendance"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+      <table><thead><tr>{["Name",activeTab==="students"?"Class":"Subjects","Status","Time","Sign In","Sign Out","Hours","Mark"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
         <tbody>{list.map(item=>{
           const key=`${viewDate}-${item.id}`,rec=attSrc[key];
           return <tr key={item.id} style={{background:rec?.status==="late"?"#fffde7":""}} onMouseEnter={e=>e.currentTarget.style.background=rec?.status==="late"?"#fff9c4":C.bg} onMouseLeave={e=>e.currentTarget.style.background=rec?.status==="late"?"#fffde7":""}>
             <td style={S.td}><div style={{fontWeight:700}}>{item.name}</div>{activeTab==="students"&&<div style={{fontSize:"0.7rem",color:C.textLight}}>{item.fatherName}</div>}</td>
             <td style={S.td}>{activeTab==="students"?item.class:item.subjects?.join(", ")}</td>
             <td style={S.td}>{rec?<Badge status={rec.status}/>:<span style={{color:C.textLight,fontSize:"0.82rem"}}>Not marked</span>}</td>
-            <td style={S.td}>{rec?.time||"—"}</td>
-            <td style={S.td}><div style={{display:"flex",gap:5}}>
+            <td style={S.td}><b style={{color:C.green}}>{rec?.in_time||"—"}</b></td><td style={S.td}><b style={{color:C.red}}>{rec?.out_time||"—"}</b></td><td style={S.td}>{rec?.total_hours||"—"}</td>
+            <td style={S.td}><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+              {!rec?.in_time&&<button onClick={()=>{
+                const k=`${viewDate}-${item.id}`;
+                const t=new Date().toTimeString().slice(0,5);
+                const nowMin=parseInt(t.split(":")[0])*60+parseInt(t.split(":")[1]);
+                const timing=classTimings.find(ct=>ct.class===item.class&&ct.day===["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date(viewDate).getDay()]);
+                let status="present";
+                if(timing&&activeTab==="students"){const[h,m]=timing.startTime.split(":").map(Number);if(nowMin-(h*60+m)>(settings.lateMinutes||15))status="late";}
+                const rec2={status,in_time:t,out_time:null,total_hours:null};
+                if(activeTab==="teachers"){setTeacherAtt(p=>({...p,[k]:rec2}));}
+                else{setAttendance(p=>({...p,[k]:rec2}));if(status==="late"){const s2=students.find(x=>x.id===item.id);if(s2)setWpLog(prev=>[{id:gid(),type:"Late Alert",studentName:s2.name,status:"sent",time:t},...prev]);}}
+                showToast(item.name+" signed in");
+              }} style={{background:C.green,color:C.white,border:"none",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:"0.72rem",fontWeight:700}}>Sign In</button>}
+              {rec?.in_time&&!rec?.out_time&&<button onClick={()=>{
+                const k=`${viewDate}-${item.id}`;
+                const t=new Date().toTimeString().slice(0,5);
+                const[ih,im]=rec.in_time.split(":").map(Number);
+                const[oh,om]=t.split(":").map(Number);
+                const diff=(oh*60+om)-(ih*60+im);
+                const hours=diff>0?Math.floor(diff/60)+"h "+(diff%60)+"m":null;
+                const upd={...rec,out_time:t,total_hours:hours};
+                if(activeTab==="teachers"){setTeacherAtt(p=>({...p,[k]:upd}));}
+                else setAttendance(p=>({...p,[k]:upd}));
+                showToast(item.name+" signed out"+(hours?" — "+hours:""));
+              }} style={{background:C.red,color:C.white,border:"none",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:"0.72rem",fontWeight:700}}>Sign Out</button>}
               {["present","late","absent","leave"].map(s=><button key={s} onClick={()=>mark(item.id,s,activeTab==="teachers")}
-                style={{padding:"4px 8px",border:`1px solid ${s==="present"?C.green:s==="late"?C.yellow:s==="absent"?C.red:"#888"}`,
+                style={{padding:"3px 6px",border:`1px solid ${s==="present"?C.green:s==="late"?C.yellow:s==="absent"?C.red:"#888"}`,
                   background:rec?.status===s?(s==="present"?C.greenBg:s==="late"?C.yellowBg:s==="absent"?C.redBg:"#eee"):"transparent",
                   color:s==="present"?C.green:s==="late"?C.yellow:s==="absent"?C.red:"#888",
-                  borderRadius:6,cursor:"pointer",fontSize:"0.72rem",fontWeight:700,fontFamily:"inherit"}}>
+                  borderRadius:6,cursor:"pointer",fontSize:"0.68rem",fontWeight:700,fontFamily:"inherit"}}>
                 {s.charAt(0).toUpperCase()+s.slice(1)}
               </button>)}
             </div></td>
@@ -1328,6 +1358,76 @@ function printAttendance(list, attendance, date, type, settings) {
   </div>
   </body></html>`);
   win.document.close();
+}
+
+
+// SCHEDULE COMPONENT
+function Schedule({classTimings,setClassTimings,students,showToast}){
+  const[selDay,setSelDay]=useState(["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date().getDay()]);
+  const[modal,setModal]=useState(null);
+  const[form,setForm]=useState(null);
+  const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const CLASSES2=["Class 1","Class 2","Class 3","Class 4","Class 5","Class 6","Class 7","Class 8","Class 9","Class 10","O-Level","IGCSE","A-Level","AS-Level","A2-Level","FSc Pre-Med","FSc Pre-Eng","FA"];
+  const dayTim=classTimings.filter(t=>t.day===selDay).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+  function save(){
+    if(modal==="add")setClassTimings(p=>[...p,{...form,id:gid()}]);
+    else setClassTimings(p=>p.map(t=>t.id===form.id?form:t));
+    showToast("Saved");setModal(null);setForm(null);
+  }
+  return <div>
+    <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
+      <div style={{display:"flex",background:C.bg,borderRadius:9,border:`1px solid ${C.border}`,overflow:"hidden",flexWrap:"wrap"}}>
+        {DAYS.map(d=><button key={d} onClick={()=>setSelDay(d)} style={{padding:"8px 12px",background:selDay===d?C.navy:"transparent",color:selDay===d?C.white:C.text,border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.82rem",fontFamily:"inherit"}}>{d.slice(0,3)}</button>)}
+      </div>
+      <button onClick={()=>{setForm({class:"FSc Pre-Med",day:selDay,shift:"Morning",startTime:"08:00",endTime:"10:00"});setModal("add");}} style={S.btnPrimary}>+ Add Timing</button>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:8,marginBottom:16}}>
+      {DAYS.map(day=>{
+        const dt=classTimings.filter(t=>t.day===day).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+        const isToday=day===DAYS[new Date().getDay()];
+        return <div key={day} style={{background:C.white,borderRadius:10,overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+          <div style={{background:isToday?C.gold:C.navy,color:C.white,padding:"8px 10px",textAlign:"center",fontWeight:700,fontSize:"0.82rem"}}>{day.slice(0,3)}{isToday?" ★":""}</div>
+          <div style={{padding:"8px"}}>
+            {dt.length===0?<div style={{textAlign:"center",padding:"8px 0",color:C.textLight,fontSize:"0.72rem"}}>No class</div>
+              :dt.map(t=><div key={t.id} style={{background:C.bg,borderRadius:6,padding:"5px 8px",marginBottom:4,borderLeft:`3px solid ${C.gold}`}}>
+                <div style={{fontWeight:700,fontSize:"0.75rem"}}>{t.class}</div>
+                <div style={{fontSize:"0.68rem",color:C.textMid}}>{t.startTime}–{t.endTime}</div>
+              </div>)}
+          </div>
+        </div>;
+      })}
+    </div>
+    <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <div style={{background:C.navy,color:C.white,padding:"12px 16px",fontWeight:700}}>{selDay} — Detailed Schedule</div>
+      <table><thead><tr>{["Class","Shift","Start","End","Students","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <tbody>
+          {dayTim.length===0&&<tr><td colSpan={6} style={{...S.td,textAlign:"center",padding:32,color:C.textLight}}>No classes on {selDay} — Click "+ Add Timing" to add</td></tr>}
+          {dayTim.map(t=>{
+            const cnt=students.filter(s=>s.active&&s.class===t.class).length;
+            return <tr key={t.id} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+              <td style={S.td}><span style={{fontWeight:700}}>{t.class}</span></td>
+              <td style={S.td}>{t.shift}</td>
+              <td style={S.td}><strong>{t.startTime}</strong></td>
+              <td style={S.td}><strong>{t.endTime}</strong></td>
+              <td style={S.td}><span style={{fontWeight:700,color:C.navy}}>{cnt} students</span></td>
+              <td style={S.td}><div style={{display:"flex",gap:5}}>
+                <button onClick={()=>{setForm({...t});setModal("edit");}} style={{...S.btnGhost,padding:"5px 9px",fontSize:"0.75rem"}}>Edit</button>
+                <button onClick={()=>{setClassTimings(p=>p.filter(x=>x.id!==t.id));showToast("Removed");}} style={{...S.btnDanger,padding:"5px 9px",fontSize:"0.75rem"}}>Remove</button>
+              </div></td>
+            </tr>;
+          })}
+        </tbody>
+      </table>
+    </div>
+    {(modal==="add"||modal==="edit")&&form&&<Modal title={modal==="add"?"Add Timing":"Edit Timing"} onClose={()=>{setModal(null);setForm(null);}} width={400}>
+      <Field label="Class"><select value={form.class} onChange={e=>setForm({...form,class:e.target.value})} style={S.select}>{CLASSES2.map(c=><option key={c}>{c}</option>)}</select></Field>
+      <Field label="Day"><select value={form.day} onChange={e=>setForm({...form,day:e.target.value})} style={S.select}>{DAYS.map(d=><option key={d}>{d}</option>)}</select></Field>
+      <Field label="Shift"><select value={form.shift} onChange={e=>setForm({...form,shift:e.target.value})} style={S.select}><option>Morning</option><option>Afternoon</option><option>Evening</option></select></Field>
+      <G2><Field label="Start Time"><input type="time" value={form.startTime} onChange={e=>setForm({...form,startTime:e.target.value})} style={S.input}/></Field>
+        <Field label="End Time"><input type="time" value={form.endTime} onChange={e=>setForm({...form,endTime:e.target.value})} style={S.input}/></Field></G2>
+      <div style={{display:"flex",gap:10}}><button onClick={save} style={{...S.btnPrimary,flex:1}}>Save</button><button onClick={()=>{setModal(null);setForm(null);}} style={{...S.btnGhost,flex:1}}>Cancel</button></div>
+    </Modal>}
+  </div>;
 }
 
 ReactDOM.render(<App/>, document.getElementById("root"));
