@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:"Segoe UI",system-ui,sans-serif;background:#f0f4f8;}
@@ -50,12 +51,19 @@ const S={
   select:{width:"100%",padding:"10px 13px",border:`2px solid ${C.border}`,borderRadius:8,fontSize:"0.9rem",outline:"none",boxSizing:"border-box",color:C.text,background:C.white},
   btnPrimary:{background:C.navy,color:C.white,border:"none",borderRadius:9,padding:"11px 20px",fontWeight:700,cursor:"pointer",fontSize:"0.88rem"},
   btnGold:{background:C.gold,color:C.white,border:"none",borderRadius:9,padding:"11px 20px",fontWeight:700,cursor:"pointer",fontSize:"0.88rem"},
+  btnG:{background:C.gold,color:C.white,border:"none",borderRadius:9,padding:"11px 20px",fontWeight:700,cursor:"pointer",fontSize:"0.88rem"},
   btnGreen:{background:C.green,color:C.white,border:"none",borderRadius:9,padding:"11px 20px",fontWeight:700,cursor:"pointer",fontSize:"0.88rem"},
   btnDanger:{background:C.redBg,color:C.red,border:`1px solid ${C.red}`,borderRadius:9,padding:"11px 20px",fontWeight:700,cursor:"pointer",fontSize:"0.88rem"},
   btnGhost:{background:C.bg,color:C.text,border:`1px solid ${C.border}`,borderRadius:9,padding:"11px 20px",fontWeight:600,cursor:"pointer",fontSize:"0.88rem"},
   badge:(color,bg)=>({background:bg,color,padding:"3px 10px",borderRadius:20,fontSize:"0.72rem",fontWeight:700,display:"inline-block"}),
   th:{padding:"11px 14px",textAlign:"left",fontSize:"0.72rem",fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.05em",background:C.bg,borderBottom:`2px solid ${C.border}`},
   td:{padding:"12px 14px",fontSize:"0.87rem",color:C.text,borderBottom:`1px solid ${C.border}`},
+  // Short aliases
+  btnP:{background:C.navy,color:C.white,border:"none",borderRadius:9,padding:"11px 20px",fontWeight:700,cursor:"pointer",fontSize:"0.88rem"},
+  btnGh:{background:C.bg,color:C.text,border:`1px solid ${C.border}`,borderRadius:9,padding:"11px 20px",fontWeight:600,cursor:"pointer",fontSize:"0.88rem"},
+  btnGr:{background:C.green,color:C.white,border:"none",borderRadius:9,padding:"11px 20px",fontWeight:700,cursor:"pointer",fontSize:"0.88rem"},
+  btnD:{background:C.redBg,color:C.red,border:`1px solid ${C.red}`,borderRadius:9,padding:"11px 20px",fontWeight:700,cursor:"pointer",fontSize:"0.88rem"},
+
 };
 
 // ── DEFAULT DATA ──────────────────────────────────────────────────────────────
@@ -111,7 +119,7 @@ const NAV=[
   {id:"teachers",label:"Teachers",perm:"teachers"},
   {id:"fees",label:"Fees & Payments",perm:"fees"},
   {id:"challans",label:"Challans",perm:"challans"},
-  {id:"attendance",label:"Attendance",perm:"attendance"},{id:"schedule",label:"Schedule",perm:"attendance"},
+  {id:"attendance",label:"📋 Attendance",perm:"attendance"},{id:"schedule",label:"📅 Timetable",perm:"attendance"},{id:"leaves",label:"🏖 Leave Management",perm:"attendance"},{id:"devices",label:"🔌 Devices",perm:"settings"},
   {id:"reports",label:"Reports",perm:"reports"},
   {id:"users",label:"User Management",perm:"users"},
   {id:"settings",label:"Settings",perm:"settings"},
@@ -496,7 +504,9 @@ function App(){
           {tab==="teachers"&&canAccess("teachers")&&<Teachers teachers={teachers} setTeachers={setTeachers} students={students} teacherAtt={teacherAtt} settings={settings} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
           {tab==="fees"&&canAccess("fees")&&<Fees students={students} setStudents={setStudents} teachers={teachers} settings={settings} setSettings={setSettings} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
           {tab==="challans"&&canAccess("challans")&&<Challans students={students} teachers={teachers} settings={settings} wpLog={wpLog} setWpLog={setWpLog} showToast={showToast}/>}
-          {tab==="schedule"&&canAccess("attendance")&&<Schedule classTimings={classTimings} setClassTimings={setClassTimings} students={students} showToast={showToast}/> }
+          {tab==="schedule"&&canAccess("attendance")&&<Schedule classTimings={classTimings} setClassTimings={setClassTimings} students={students} teachers={teachers} showT={showToast} isSA={currentUser.role==="superadmin"} settings={settings}/> }
+          {tab==="leaves"&&canAccess("attendance")&&<LeaveManagement students={students} teachers={teachers} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
+          {tab==="devices"&&canAccess("settings")&&<DeviceManagement settings={settings} setSettings={setSettings} showToast={showToast}/>}
           {tab==="attendance"&&canAccess("attendance")&&<Attendance students={students} teachers={teachers} attendance={attendance} setAttendance={setAttendance} teacherAtt={teacherAtt} setTeacherAtt={setTeacherAtt} classTimings={classTimings} settings={settings} showToast={showToast} setWpLog={setWpLog} isSA={currentUser.role==="superadmin"}/>}
           {tab==="reports"&&canAccess("reports")&&<Reports students={students} teachers={teachers} attendance={attendance} teacherAtt={teacherAtt} settings={settings}/>}
           {tab==="users"&&canAccess("users")&&<Users users={users} setUsers={setUsers} currentUser={currentUser} showToast={showToast}/>}
@@ -511,71 +521,7 @@ function App(){
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
-function Dashboard({students,teachers,attendance,settings,wpLog,classTimings}){
-  const active=students.filter(s=>s.active);
-  const todayKey=new Date().toISOString().split("T")[0];
-  const todayAtt=Object.entries(attendance).filter(([k])=>k.startsWith(todayKey));
-  const presentT=todayAtt.filter(([,v])=>v.status==="present").length;
-  const absentT=todayAtt.filter(([,v])=>v.status==="absent").length;
-  const lateT=todayAtt.filter(([,v])=>v.status==="late").length;
-  const tmKey=`${CY}-${CM}`;
-  const tmFees=active.map(s=>s.fees[tmKey]).filter(Boolean);
-  const collected=tmFees.reduce((a,f)=>a+f.paid,0);
-  const pending=tmFees.reduce((a,f)=>a+Math.max(0,f.totalFee-f.discount-f.paid),0);
-  const totalDue=active.flatMap(s=>Object.values(s.fees)).reduce((a,f)=>a+Math.max(0,f.totalFee-f.discount-f.paid),0);
 
-  const stats=[
-    {label:"Total Students",value:active.length,sub:`${students.filter(s=>!s.active).length} inactive`,color:C.navy},
-    {label:"Collected This Month",value:`Rs. ${fmt(collected)}`,sub:`${MONTHS[CM]} ${CY}`,color:C.green},
-    {label:"Pending This Month",value:`Rs. ${fmt(pending)}`,sub:"To be collected",color:C.red},
-    {label:"Total Outstanding",value:`Rs. ${fmt(totalDue)}`,sub:"All time",color:C.yellow},
-    {label:"Present Today",value:presentT,sub:`${absentT} absent · ${lateT} late`,color:C.blue},
-    {label:"Teachers",value:teachers.filter(t=>t.active).length,sub:"Active",color:C.gold},
-  ];
-
-  return <div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:12,marginBottom:20}}>
-      {stats.map(st=><div key={st.label} style={{background:C.white,borderRadius:12,padding:"16px 18px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",borderTop:`3px solid ${st.color}`}}>
-        <div style={{fontSize:"0.68rem",color:C.textLight,fontWeight:700,textTransform:"uppercase",marginBottom:6}}>{st.label}</div>
-        <div style={{fontSize:"1.35rem",fontWeight:900,color:st.color,marginBottom:3}}>{st.value}</div>
-        <div style={{fontSize:"0.72rem",color:C.textLight}}>{st.sub}</div>
-      </div>)}
-    </div>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
-      <div style={S.card}>
-        <SecTitle title={`Defaulters — ${MONTHS[CM]}`}/>
-        {active.filter(s=>{const f=s.fees[tmKey];return f&&f.status!=="paid";}).slice(0,5).map(s=>{
-          const f=s.fees[tmKey],bal=f?f.totalFee-f.discount-f.paid:0;
-          return <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.border}`}}>
-            <div><div style={{fontWeight:700,fontSize:"0.87rem"}}>{s.name}</div><div style={{fontSize:"0.7rem",color:C.textLight}}>{s.class}</div></div>
-            <div style={{textAlign:"right"}}><div style={{fontWeight:800,color:C.red}}>Rs. {fmt(bal)}</div><Badge status={f?.status||"unpaid"}/></div>
-          </div>;
-        })}
-        {active.filter(s=>{const f=s.fees[tmKey];return f&&f.status!=="paid";}).length===0&&<div style={{textAlign:"center",padding:20,color:C.green,fontWeight:700}}>All fees collected</div>}
-      </div>
-      <div style={S.card}>
-        <SecTitle title="Recent Alerts"/>
-        {wpLog.length===0?<div style={{textAlign:"center",padding:20,color:C.textLight}}>No alerts yet</div>
-          :wpLog.slice(0,5).map(a=><div key={a.id} style={{padding:"7px 0",borderBottom:`1px solid ${C.border}`,fontSize:"0.82rem"}}>
-            <div style={{fontWeight:700}}>{a.studentName}</div>
-            <div style={{color:C.textLight,display:"flex",justifyContent:"space-between"}}><span style={{textTransform:"capitalize"}}>{a.type}</span><span>{a.time}</span></div>
-          </div>)}
-      </div>
-    </div>
-    <div style={S.card}>
-      <SecTitle title="Class Schedule Today"/>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
-        {classTimings.map(ct=><div key={ct.id} style={{background:C.bg,borderRadius:9,padding:"10px 12px",borderLeft:`3px solid ${C.gold}`}}>
-          <div style={{fontWeight:700,fontSize:"0.85rem"}}>{ct.class}</div>
-          <div style={{fontSize:"0.72rem",color:C.textMid}}>{ct.shift}</div>
-          <div style={{fontSize:"0.8rem",color:C.navy,fontWeight:700,marginTop:3}}>{ct.startTime} — {ct.endTime}</div>
-        </div>)}
-      </div>
-    </div>
-  </div>;
-}
-
-// ── STUDENTS ──────────────────────────────────────────────────────────────────
 function Students({students,setStudents,teachers,settings,showToast,isSA}){
   const[search,setSearch]=useState("");
   const[fc,setFc]=useState("All");
@@ -716,7 +662,7 @@ function Teachers({teachers,setTeachers,students,teacherAtt,settings,showToast,i
             <td style={S.td}><span style={{fontWeight:700}}>{t.commissionType==="percentage"?`${t.commissionValue}%`:`Rs. ${fmt(t.commissionValue)}/student`}</span></td>
             <td style={S.td}><span style={{fontWeight:700,color:C.navy}}>{cnt}</span></td>
             <td style={S.td}>
-              <button onClick={()=>{setSlipModal(t);}} style={{...S.btnGold,padding:"6px 10px",fontSize:"0.78rem"}}>Salary Slip</button>
+              <button onClick={()=>{setSlipModal(t);}} style={{...S.btnG,padding:"6px 10px",fontSize:"0.78rem"}}>Salary Slip</button>
             </td>
             <td style={S.td}><div style={{display:"flex",gap:5}}>
               <button onClick={()=>openEdit(t)} style={{...S.btnGhost,padding:"6px 10px",fontSize:"0.78rem"}}>Edit</button>
@@ -734,7 +680,7 @@ function Teachers({teachers,setTeachers,students,teacherAtt,settings,showToast,i
         <Field label="Year"><select value={slipYear} onChange={e=>setSlipYear(parseInt(e.target.value))} style={S.select}>{[CY-1,CY,CY+1].map(y=><option key={y}>{y}</option>)}</select></Field>
       </G2>
       <div style={{display:"flex",gap:10}}>
-        <button onClick={()=>{printSalarySlip(slipModal,slipMonth,slipYear,students,teacherAtt,settings);setSlipModal(null);}} style={{...S.btnGold,flex:1}}>Generate & Print Salary Slip</button>
+        <button onClick={()=>{printSalarySlip(slipModal,slipMonth,slipYear,students,teacherAtt,settings);setSlipModal(null);}} style={{...S.btnG,flex:1}}>Generate & Print Salary Slip</button>
         <button onClick={()=>setSlipModal(null)} style={{...S.btnGhost,flex:1}}>Cancel</button>
       </div>
     </Modal>}
@@ -823,7 +769,7 @@ function Fees({students,setStudents,teachers,settings,setSettings,showToast,isSA
                 <td style={S.td}><Badge status={fee.status}/></td>
                 <td style={S.td}><div style={{display:"flex",gap:5}}>
                   {(fee.status!=="paid"||isSA)&&<button onClick={()=>{setPf({amount:String(bal),discount:String(fee.discount||0),arrears:String(fee.arrears||0),feeKey:key});setModal("pay");}} style={{...S.btnGreen,padding:"5px 9px",fontSize:"0.75rem"}}>{isSA&&fee.status==="paid"?"Edit":"Pay"}</button>}
-                  <button onClick={()=>printChallan(sel,fee,key,settings,teachers)} style={{...S.btnGold,padding:"5px 9px",fontSize:"0.75rem"}}>Challan</button>
+                  <button onClick={()=>printChallan(sel,fee,key,settings,teachers)} style={{...S.btnG,padding:"5px 9px",fontSize:"0.75rem"}}>Challan</button>
                 </div></td>
               </tr>;
             })}</tbody>
@@ -881,7 +827,7 @@ function Challans({students,teachers,settings,wpLog,setWpLog,showToast}){
             <td style={S.td}>{s.class}</td>
             <td style={S.td}>Rs. {fmt(fee?.totalFee||0)}</td>
             <td style={S.td}>{fee?<Badge status={fee.status}/>:"—"}</td>
-            <td style={S.td}>{fee&&<button onClick={()=>printChallan(s,fee,key,settings,teachers)} style={{...S.btnGold,padding:"6px 12px",fontSize:"0.78rem"}}>Print Challan</button>}</td>
+            <td style={S.td}>{fee&&<button onClick={()=>printChallan(s,fee,key,settings,teachers)} style={{...S.btnG,padding:"6px 12px",fontSize:"0.78rem"}}>Print Challan</button>}</td>
           </tr>;
         })}</tbody>
       </table>
@@ -930,7 +876,7 @@ function Attendance({students,teachers,attendance,setAttendance,teacherAtt,setTe
         {["students","teachers"].map(t=><button key={t} onClick={()=>setActiveTab(t)} style={{padding:"9px 16px",background:activeTab===t?C.navy:"transparent",color:activeTab===t?C.white:C.text,border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.85rem",textTransform:"capitalize",fontFamily:"inherit"}}>{t}</button>)}
       </div>
       <button onClick={simulateScan} disabled={scanning} style={{...S.btnPrimary,opacity:scanning?0.7:1}}>{scanning?"Scanning...":"Simulate Biometric"}</button>
-      <button onClick={()=>printAttendance(list,attSrc,viewDate,activeTab,settings)} style={S.btnGold}>Print Attendance</button>
+      <button onClick={()=>printAttendance(list,attSrc,viewDate,activeTab,settings)} style={S.btnG}>Print Attendance</button>
       {isSA&&<button onClick={()=>{if(window.confirm("Clear all attendance for "+viewDate+"?")){{const keys=Object.keys(activeTab==="students"?attendance:teacherAtt).filter(k=>k.startsWith(viewDate));if(activeTab==="students"){setAttendance(p=>{const n={...p};keys.forEach(k=>delete n[k]);return n;});}else{setTeacherAtt(p=>{const n={...p};keys.forEach(k=>delete n[k]);return n;});}}showToast("Attendance cleared for "+viewDate);}}} style={{...S.btnDanger,padding:"9px 14px",fontSize:"0.82rem"}}>Clear Day</button>}
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:14}}>
@@ -1057,231 +1003,7 @@ function printIndividualAttPDF(person,records,type,settings){
   win.document.close();
 }
 
-function Reports({students,teachers,attendance,teacherAtt,settings}){
-  const[rType,setRType]=useState("fee");
-  const[month,setMonth]=useState(CM);
-  const[year,setYear]=useState(CY);
-  const[selStudent,setSelStudent]=useState("");
-  const[selTeacher,setSelTeacher]=useState("");
-  const active=students.filter(s=>s.active);
-  const key=`${year}-${month}`;
 
-  const feeReport=active.map(s=>{const f=s.fees[key];return{name:s.name,class:s.class,fee:f?.totalFee||0,discount:f?.discount||0,paid:f?.paid||0,balance:f?Math.max(0,f.totalFee-f.discount-f.paid):0,status:f?.status||"no record"};});
-  const tFee=feeReport.reduce((a,r)=>a+r.fee,0),tPaid=feeReport.reduce((a,r)=>a+r.paid,0),tBal=feeReport.reduce((a,r)=>a+r.balance,0);
-
-  const teacherReport=teachers.filter(t=>t.active).map(t=>{
-    const assigned=active.filter(s=>s.subjects.some(x=>x.teacherId===t.id));
-    const revenue=assigned.reduce((a,s)=>a+s.subjects.filter(x=>x.teacherId===t.id).reduce((b,x)=>b+(parseInt(x.fee)||0),0),0);
-    const commission=t.commissionType==="percentage"?Math.round(revenue*t.commissionValue/100):assigned.length*(parseInt(t.commissionValue)||0);
-    return{name:t.name,students:assigned.length,revenue,commission};
-  });
-
-  const attReport=active.map(s=>{
-    const keys=Object.keys(attendance).filter(k=>k.endsWith(`-${s.id}`));
-    const p=keys.filter(k=>attendance[k].status==="present").length;
-    const l=keys.filter(k=>attendance[k].status==="late").length;
-    const a=keys.filter(k=>attendance[k].status==="absent").length;
-    return{name:s.name,class:s.class,present:p,late:l,absent:a,total:keys.length,rate:keys.length>0?Math.round((p/keys.length)*100):0};
-  });
-
-  const tAttReport=teachers.filter(t=>t.active).map(t=>{
-    const keys=Object.keys(teacherAtt).filter(k=>k.endsWith(`-${t.id}`));
-    const p=keys.filter(k=>teacherAtt[k].status==="present").length;
-    const l=keys.filter(k=>teacherAtt[k].status==="late").length;
-    const a=keys.filter(k=>teacherAtt[k].status==="absent").length;
-    return{name:t.name,present:p,late:l,absent:a,total:keys.length,rate:keys.length>0?Math.round((p/keys.length)*100):0};
-  });
-
-  return <div>
-    <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
-      <div style={{display:"flex",background:C.bg,borderRadius:9,border:`1px solid ${C.border}`,overflow:"hidden"}}>
-        {[["fee","Fee Collection"],["teacher","Teacher Commission"],["attendance","Student Attendance"],["teacherAtt","Teacher Attendance"]].map(([id,label])=>
-          <button key={id} onClick={()=>setRType(id)} style={{padding:"9px 14px",background:rType===id?C.navy:"transparent",color:rType===id?C.white:C.text,border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.82rem",fontFamily:"inherit"}}>{label}</button>)}
-      </div>
-      {rType==="fee"&&<div style={{display:"flex",gap:8}}>
-        <select value={month} onChange={e=>setMonth(parseInt(e.target.value))} style={{...S.select,width:"auto"}}>{MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}</select>
-        <select value={year} onChange={e=>setYear(parseInt(e.target.value))} style={{...S.select,width:"auto"}}>{[CY-1,CY,CY+1].map(y=><option key={y}>{y}</option>)}</select>
-      </div>}
-    </div>
-
-    {rType==="fee"&&<div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:14}}>
-        {[["Total Billed",fmt(tFee),C.navy],["Collected",fmt(tPaid),C.green],["Outstanding",fmt(tBal),C.red]].map(([l,v,c])=>
-          <div key={l} style={{background:C.white,borderRadius:10,padding:"14px 18px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",borderTop:`3px solid ${c}`}}>
-            <div style={{fontSize:"0.7rem",color:C.textLight,fontWeight:700,textTransform:"uppercase",marginBottom:5}}>{l}</div>
-            <div style={{fontSize:"1.3rem",fontWeight:900,color:c}}>Rs. {v}</div>
-          </div>)}
-      </div>
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-        <button onClick={()=>{
-          const headers=["Student","Class","Fee","Discount","Paid","Balance","Status"];
-          const rows=feeReport.map(r=>[r.name,r.class,`Rs.${fmt(r.fee)}`,r.discount>0?`Rs.${fmt(r.discount)}`:"—",`Rs.${fmt(r.paid)}`,`Rs.${fmt(r.balance)}`,r.status.toUpperCase()]);
-          const cards=[["Total Billed",`Rs.${fmt(tFee)}`,"navy"],["Collected",`Rs.${fmt(tPaid)}`,"green"],["Outstanding",`Rs.${fmt(tBal)}`,"red"]];
-          printReportPDF(`Fee Collection Report — ${MONTHS[month]} ${year}`,headers,rows,cards,settings);
-        }} style={{...S.btnGold,padding:"8px 16px",fontSize:"0.82rem"}}>🖨 Print Report PDF</button>
-      </div>
-      <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-        <table><thead><tr>{["Student","Class","Fee","Discount","Paid","Balance","Status"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-          <tbody>{feeReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
-            <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td><td style={S.td}>{r.class}</td>
-            <td style={S.td}>Rs. {fmt(r.fee)}</td>
-            <td style={S.td}>{r.discount>0?<span style={{color:C.green}}>Rs. {fmt(r.discount)}</span>:"—"}</td>
-            <td style={S.td}><span style={{color:C.green,fontWeight:700}}>Rs. {fmt(r.paid)}</span></td>
-            <td style={S.td}><span style={{color:r.balance>0?C.red:C.green,fontWeight:700}}>Rs. {fmt(r.balance)}</span></td>
-            <td style={S.td}><Badge status={r.status}/></td>
-          </tr>)}</tbody>
-        </table>
-      </div>
-    </div>}
-
-    {rType==="teacher"&&<div>
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-        <button onClick={()=>{
-          const headers=["Teacher","Students","Revenue","Commission Due"];
-          const rows=teacherReport.map(r=>[r.name,r.students,`Rs.${fmt(r.revenue)}`,`Rs.${fmt(r.commission)}`]);
-          printReportPDF(`Teacher Commission Report — ${MONTHS[month]} ${year}`,headers,rows,[],settings);
-        }} style={{...S.btnGold,padding:"8px 16px",fontSize:"0.82rem"}}>🖨 Print Report PDF</button>
-      </div>
-      <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-        <table><thead><tr>{["Teacher","Students","Revenue","Commission Due"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-          <tbody>{teacherReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
-            <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td>
-            <td style={S.td}>{r.students}</td>
-            <td style={S.td}>Rs. {fmt(r.revenue)}</td>
-            <td style={S.td}><span style={{fontWeight:900,color:C.gold,fontSize:"1rem"}}>Rs. {fmt(r.commission)}</span></td>
-          </tr>)}</tbody>
-        </table>
-      </div>
-    </div>}
-
-    {rType==="attendance"&&<div>
-      <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"center",flexWrap:"wrap"}}>
-        <select value={selStudent} onChange={e=>setSelStudent(e.target.value)} style={{...S.select,width:"auto",minWidth:220}}>
-          <option value="">— All Students (Summary) —</option>
-          {active.map(s=><option key={s.id} value={s.id}>{s.name} ({s.class})</option>)}
-        </select>
-        {selStudent&&<button onClick={()=>{
-          const s=active.find(x=>x.id===selStudent);
-          if(!s)return;
-          const recs=Object.entries(attendance).filter(([k])=>k.endsWith(`-${s.id}`)).map(([k,v])=>({date:k.split(`-${s.id}`)[0],...v})).sort((a,b)=>b.date.localeCompare(a.date));
-          printIndividualAttPDF(s,recs,"Student",settings);
-        }} style={{...S.btnGold,padding:"8px 16px",fontSize:"0.82rem"}}>🖨 Print Individual PDF</button>}
-        {!selStudent&&<button onClick={()=>{
-          const headers=["Student","Class","Present","Late","Absent","Total","Rate"];
-          const rows=attReport.map(r=>[r.name,r.class,r.present,r.late,r.absent,r.total,r.rate+"%"]);
-          printReportPDF("Student Attendance Summary Report",headers,rows,[],settings);
-        }} style={{...S.btnGold,padding:"8px 16px",fontSize:"0.82rem"}}>🖨 Print All PDF</button>}
-      </div>
-      {!selStudent&&<div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-        <table><thead><tr>{["Student","Class","Present","Late","Absent","Total","Rate"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-          <tbody>{attReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
-            <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td><td style={S.td}>{r.class}</td>
-            <td style={S.td}><span style={{color:C.green,fontWeight:700}}>{r.present}</span></td>
-            <td style={S.td}><span style={{color:C.yellow,fontWeight:700}}>{r.late}</span></td>
-            <td style={S.td}><span style={{color:C.red,fontWeight:700}}>{r.absent}</span></td>
-            <td style={S.td}>{r.total}</td>
-            <td style={S.td}><div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{flex:1,background:C.bg,borderRadius:4,height:6,overflow:"hidden"}}><div style={{width:`${r.rate}%`,background:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,height:"100%"}}/></div>
-              <span style={{fontWeight:700,color:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,minWidth:34}}>{r.rate}%</span>
-            </div></td>
-          </tr>)}</tbody>
-        </table>
-      </div>}
-      {selStudent&&(()=>{
-        const s=active.find(x=>x.id===selStudent);
-        if(!s)return null;
-        const recs=Object.entries(attendance).filter(([k])=>k.endsWith(`-${s.id}`)).map(([k,v])=>({date:k.split(`-${s.id}`)[0],...v})).sort((a,b)=>b.date.localeCompare(a.date));
-        const p=recs.filter(r=>r.status==="present").length,l=recs.filter(r=>r.status==="late").length,a=recs.filter(r=>r.status==="absent").length;
-        return <div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
-            {[["Present",p,C.green,C.greenBg],["Late",l,C.yellow,C.yellowBg],["Absent",a,C.red,C.redBg],["Rate",recs.length>0?Math.round(((p+l)/recs.length)*100)+"%":"—",C.navy,C.blueBg]].map(([lab,val,c,bg])=>
-              <div key={lab} style={{background:bg,borderRadius:10,padding:"12px 16px",borderLeft:`3px solid ${c}`}}>
-                <div style={{fontSize:"0.7rem",color:c,fontWeight:700,textTransform:"uppercase"}}>{lab}</div>
-                <div style={{fontSize:"1.5rem",fontWeight:900,color:c}}>{val}</div>
-              </div>)}
-          </div>
-          <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-            <table><thead><tr>{["Date","Day","Status","Sign In","Sign Out","Hours"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-              <tbody>{recs.map((r,i)=>{const c=r.status==="present"?C.green:r.status==="late"?C.yellow:r.status==="absent"?C.red:C.textLight;return<tr key={i} style={{background:r.status==="present"?C.greenBg:r.status==="late"?C.yellowBg:r.status==="absent"?C.redBg:""}}>
-                <td style={S.td}><b>{r.date}</b></td>
-                <td style={S.td}>{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(r.date).getDay()]}</td>
-                <td style={S.td}><span style={{fontWeight:700,color:c,textTransform:"capitalize"}}>{r.status||"—"}</span></td>
-                <td style={S.td}>{r.in_time||"—"}</td><td style={S.td}>{r.out_time||"—"}</td><td style={S.td}>{r.total_hours||"—"}</td>
-              </tr>;})}
-              </tbody>
-            </table>
-          </div>
-        </div>;
-      })()}
-    </div>}
-
-    {rType==="teacherAtt"&&<div>
-      <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"center",flexWrap:"wrap"}}>
-        <select value={selTeacher} onChange={e=>setSelTeacher(e.target.value)} style={{...S.select,width:"auto",minWidth:220}}>
-          <option value="">— All Teachers (Summary) —</option>
-          {teachers.filter(t=>t.active).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-        {selTeacher&&<button onClick={()=>{
-          const t=teachers.find(x=>x.id===selTeacher);
-          if(!t)return;
-          const recs=Object.entries(teacherAtt).filter(([k])=>k.endsWith(`-${t.id}`)).map(([k,v])=>({date:k.split(`-${t.id}`)[0],...v})).sort((a,b)=>b.date.localeCompare(a.date));
-          printIndividualAttPDF(t,recs,"Teacher",settings);
-        }} style={{...S.btnGold,padding:"8px 16px",fontSize:"0.82rem"}}>🖨 Print Individual PDF</button>}
-        {!selTeacher&&<button onClick={()=>{
-          const headers=["Teacher","Present","Late","Absent","Total","Rate"];
-          const rows=tAttReport.map(r=>[r.name,r.present,r.late,r.absent,r.total,r.rate+"%"]);
-          printReportPDF("Teacher Attendance Summary Report",headers,rows,[],settings);
-        }} style={{...S.btnGold,padding:"8px 16px",fontSize:"0.82rem"}}>🖨 Print All PDF</button>}
-      </div>
-      <div style={{...S.card,background:C.yellowBg,borderLeft:`4px solid ${C.yellow}`,padding:"12px 16px",marginBottom:14}}>
-        <div style={{fontWeight:700,color:C.yellow,fontSize:"0.85rem"}}>Late arrivals highlighted. No salary deduction — record only.</div>
-      </div>
-      {!selTeacher&&<div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-        <table><thead><tr>{["Teacher","Present","Late","Absent","Total","Rate"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-          <tbody>{tAttReport.map((r,i)=><tr key={i} style={{background:r.late>0?"#fffde7":""}} onMouseEnter={e=>e.currentTarget.style.background=r.late>0?"#fff9c4":C.bg} onMouseLeave={e=>e.currentTarget.style.background=r.late>0?"#fffde7":""}>
-            <td style={S.td}><span style={{fontWeight:700,color:r.late>0?C.red:C.text}}>{r.name}{r.late>0?" ⚠":""}</span></td>
-            <td style={S.td}><span style={{color:C.green,fontWeight:700}}>{r.present}</span></td>
-            <td style={S.td}><span style={{color:C.red,fontWeight:700,background:r.late>0?C.redBg:"transparent",padding:r.late>0?"2px 8px":"0",borderRadius:4}}>{r.late}</span></td>
-            <td style={S.td}><span style={{color:C.red,fontWeight:700}}>{r.absent}</span></td>
-            <td style={S.td}>{r.total}</td>
-            <td style={S.td}><div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{flex:1,background:C.bg,borderRadius:4,height:6,overflow:"hidden"}}><div style={{width:`${r.rate}%`,background:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,height:"100%"}}/></div>
-              <span style={{fontWeight:700,color:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,minWidth:34}}>{r.rate}%</span>
-            </div></td>
-          </tr>)}</tbody>
-        </table>
-      </div>}
-      {selTeacher&&(()=>{
-        const t=teachers.find(x=>x.id===selTeacher);
-        if(!t)return null;
-        const recs=Object.entries(teacherAtt).filter(([k])=>k.endsWith(`-${t.id}`)).map(([k,v])=>({date:k.split(`-${t.id}`)[0],...v})).sort((a,b)=>b.date.localeCompare(a.date));
-        const p=recs.filter(r=>r.status==="present").length,l=recs.filter(r=>r.status==="late").length,a=recs.filter(r=>r.status==="absent").length;
-        return <div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
-            {[["Present",p,C.green,C.greenBg],["Late",l,C.yellow,C.yellowBg],["Absent",a,C.red,C.redBg],["Rate",recs.length>0?Math.round(((p+l)/recs.length)*100)+"%":"—",C.navy,C.blueBg]].map(([lab,val,c,bg])=>
-              <div key={lab} style={{background:bg,borderRadius:10,padding:"12px 16px",borderLeft:`3px solid ${c}`}}>
-                <div style={{fontSize:"0.7rem",color:c,fontWeight:700,textTransform:"uppercase"}}>{lab}</div>
-                <div style={{fontSize:"1.5rem",fontWeight:900,color:c}}>{val}</div>
-              </div>)}
-          </div>
-          <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-            <table><thead><tr>{["Date","Day","Status","Sign In","Sign Out","Hours"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-              <tbody>{recs.map((r,i)=>{const c=r.status==="present"?C.green:r.status==="late"?C.yellow:r.status==="absent"?C.red:C.textLight;return<tr key={i} style={{background:r.status==="present"?C.greenBg:r.status==="late"?C.yellowBg:r.status==="absent"?C.redBg:""}}>
-                <td style={S.td}><b>{r.date}</b></td>
-                <td style={S.td}>{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(r.date).getDay()]}</td>
-                <td style={S.td}><span style={{fontWeight:700,color:c,textTransform:"capitalize"}}>{r.status||"—"}</span></td>
-                <td style={S.td}>{r.in_time||"—"}</td><td style={S.td}>{r.out_time||"—"}</td><td style={S.td}>{r.total_hours||"—"}</td>
-              </tr>;})}
-              </tbody>
-            </table>
-          </div>
-        </div>;
-      })()}
-    </div>}
-  </div>;
-}
-
-// ── USERS ─────────────────────────────────────────────────────────────────────
 function Users({users,setUsers,currentUser,showToast}){
   const[modal,setModal]=useState(null);
   const[form,setForm]=useState(null);
@@ -1531,71 +1253,890 @@ function printAttendance(list, attendance, date, type, settings) {
 
 
 // SCHEDULE COMPONENT
-function Schedule({classTimings,setClassTimings,students,showToast}){
-  const[selDay,setSelDay]=useState(["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date().getDay()]);
+function Schedule({classTimings,setClassTimings,students,teachers,showT,isSA,settings}){
+  const DAYS_ALL=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const[selDay,setSelDay]=useState(DAYS_ALL[new Date().getDay()]);
   const[modal,setModal]=useState(null);
   const[form,setForm]=useState(null);
-  const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const[viewMode,setViewMode]=useState("week"); // week | list
+
   const CLASSES2=["Class 1","Class 2","Class 3","Class 4","Class 5","Class 6","Class 7","Class 8","Class 9","Class 10","O-Level","IGCSE","A-Level","AS-Level","A2-Level","FSc Pre-Med","FSc Pre-Eng","FA"];
-  const dayTim=classTimings.filter(t=>t.day===selDay).sort((a,b)=>a.startTime.localeCompare(b.startTime));
-  function save(){
-    if(modal==="add")setClassTimings(p=>[...p,{...form,id:gid()}]);
-    else setClassTimings(p=>p.map(t=>t.id===form.id?form:t));
-    showToast("Saved");setModal(null);setForm(null);
+
+  function openAdd(){
+    setForm({class:"FSc Pre-Med",day:selDay,shift:"Morning",startTime:"08:00",endTime:"10:00",teacherIds:[],studentIds:[]});
+    setModal("add");
   }
+  function openEdit(t){
+    setForm({...t,teacherIds:t.teacherIds||[],studentIds:t.studentIds||[]});
+    setModal("edit");
+  }
+  function save(){
+    if(!form.class||!form.startTime){showT("Fill required fields","error");return;}
+    if(modal==="add") setClassTimings(p=>[...p,{...form,id:gid()}]);
+    else setClassTimings(p=>p.map(t=>t.id===form.id?form:t));
+    showT("Timing saved!");setModal(null);setForm(null);
+  }
+
+  function toggleTeacher(id){
+    setForm(f=>({...f,teacherIds:f.teacherIds.includes(id)?f.teacherIds.filter(x=>x!==id):[...f.teacherIds,id]}));
+  }
+  function toggleStudent(id){
+    setForm(f=>({...f,studentIds:f.studentIds.includes(id)?f.studentIds.filter(x=>x!==id):[...f.studentIds,id]}));
+  }
+
+  function autoAssignClass(){
+    // Auto-assign all students of the selected class
+    const classStudents=students.filter(s=>s.active&&s.class===form.class).map(s=>s.id);
+    setForm(f=>({...f,studentIds:classStudents}));
+    showT(`${classStudents.length} students from ${form.class} assigned!`);
+  }
+
+  function printSchedule(){
+    const win=window.open("","_blank");
+    const allDays=DAYS_ALL.map(day=>{
+      const dt=classTimings.filter(t=>t.day===day).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+      if(!dt.length)return"";
+      return`<div style="margin-bottom:16px;break-inside:avoid;">
+        <div style="background:#0f2744;color:white;padding:7px 12px;border-radius:6px 6px 0 0;font-weight:700;">${day}</div>
+        <table style="width:100%;border:1px solid #d0dce8;border-top:none;">
+          <thead><tr style="background:#f5f5f5;"><th style="padding:6px 10px;font-size:0.75rem;text-align:left;">Class</th><th style="padding:6px 10px;font-size:0.75rem;text-align:left;">Time</th><th style="padding:6px 10px;font-size:0.75rem;text-align:left;">Teachers</th><th style="padding:6px 10px;font-size:0.75rem;text-align:left;">Students</th></tr></thead>
+          <tbody>${dt.map(t=>{
+            const tNames=(t.teacherIds||[]).map(id=>teachers.find(x=>x.id===id)?.name).filter(Boolean).join(", ")||"—";
+            const sCount=(t.studentIds||[]).length||students.filter(s=>s.active&&s.class===t.class).length;
+            return`<tr><td style="padding:5px 10px;border-bottom:1px solid #eee;font-weight:700;">${t.class}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;">${t.startTime}–${t.endTime}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;">${tNames}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;">${sCount} students</td></tr>`;
+          }).join("")}</tbody>
+        </table>
+      </div>`;
+    }).join("");
+    win.document.write(`<!DOCTYPE html><html><head><title>Weekly Schedule</title><style>*{box-sizing:border-box;}body{font-family:"Segoe UI",sans-serif;margin:0;}@media print{.np{display:none}@page{size:A4;margin:10mm;}}</style></head><body>
+    <div class="np" style="padding:10px 20px;background:#f0f4f8;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;color:#0f2744;">Weekly Class Schedule</span><button onclick="window.print()" style="background:#0f2744;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:700;">Print</button></div>
+    <div style="background:#0f2744;color:white;padding:14px 24px;"><div style="font-size:1rem;font-weight:900;">${(settings||{}).academyName||"Achievers Academy"} — WEEKLY SCHEDULE</div></div>
+    <div style="padding:16px 24px;">${allDays}</div></body></html>`);
+    win.document.close();
+  }
+
+  const dayTim=classTimings.filter(t=>t.day===selDay).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+
   return <div>
-    <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
-      <div style={{display:"flex",background:C.bg,borderRadius:9,border:`1px solid ${C.border}`,overflow:"hidden",flexWrap:"wrap"}}>
-        {DAYS.map(d=><button key={d} onClick={()=>setSelDay(d)} style={{padding:"8px 12px",background:selDay===d?C.navy:"transparent",color:selDay===d?C.white:C.text,border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.82rem",fontFamily:"inherit"}}>{d.slice(0,3)}</button>)}
+    <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+      <div style={{display:"flex",background:C.bg,borderRadius:9,border:`1px solid ${C.border}`,overflow:"hidden"}}>
+        {DAYS_ALL.map(d=>{const isToday=d===DAYS_ALL[new Date().getDay()];return<button key={d} onClick={()=>setSelDay(d)} style={{padding:"8px 11px",background:selDay===d?C.navy:"transparent",color:selDay===d?C.white:isToday?C.gold:C.text,border:"none",cursor:"pointer",fontWeight:selDay===d||isToday?700:500,fontSize:"0.82rem",fontFamily:"inherit"}}>{d.slice(0,3)}{isToday?" ★":""}</button>;})}
       </div>
-      <button onClick={()=>{setForm({class:"FSc Pre-Med",day:selDay,shift:"Morning",startTime:"08:00",endTime:"10:00"});setModal("add");}} style={S.btnPrimary}>+ Add Timing</button>
+      {isSA&&<button onClick={openAdd} style={{...S.btnPrimary,padding:"9px 16px",fontSize:"0.85rem"}}>+ Add Timing</button>}
+      <button onClick={printSchedule} style={{...S.btnGold,padding:"9px 16px",fontSize:"0.85rem"}}>🖨 Print Schedule</button>
     </div>
+
+    {/* Weekly Overview */}
     <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:8,marginBottom:16}}>
-      {DAYS.map(day=>{
+      {DAYS_ALL.map(day=>{
         const dt=classTimings.filter(t=>t.day===day).sort((a,b)=>a.startTime.localeCompare(b.startTime));
-        const isToday=day===DAYS[new Date().getDay()];
-        return <div key={day} style={{background:C.white,borderRadius:10,overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+        const isToday=day===DAYS_ALL[new Date().getDay()];
+        return <div key={day} style={{background:C.white,borderRadius:10,overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",border:isToday?`2px solid ${C.gold}`:"2px solid transparent"}}>
           <div style={{background:isToday?C.gold:C.navy,color:C.white,padding:"8px 10px",textAlign:"center",fontWeight:700,fontSize:"0.82rem"}}>{day.slice(0,3)}{isToday?" ★":""}</div>
-          <div style={{padding:"8px"}}>
+          <div style={{padding:"6px"}}>
             {dt.length===0?<div style={{textAlign:"center",padding:"8px 0",color:C.textLight,fontSize:"0.72rem"}}>No class</div>
-              :dt.map(t=><div key={t.id} style={{background:C.bg,borderRadius:6,padding:"5px 8px",marginBottom:4,borderLeft:`3px solid ${C.gold}`}}>
-                <div style={{fontWeight:700,fontSize:"0.75rem"}}>{t.class}</div>
-                <div style={{fontSize:"0.68rem",color:C.textMid}}>{t.startTime}–{t.endTime}</div>
-              </div>)}
+              :dt.map(t=>{
+                const tNames=(t.teacherIds||[]).map(id=>teachers.find(x=>x.id===id)?.name?.split(" ")[0]).filter(Boolean);
+                const sCount=(t.studentIds||[]).length||students.filter(s=>s.active&&s.class===t.class).length;
+                return <div key={t.id} style={{background:C.bg,borderRadius:6,padding:"5px 7px",marginBottom:4,borderLeft:`3px solid ${C.gold}`}}>
+                  <div style={{fontWeight:700,fontSize:"0.75rem"}}>{t.class}</div>
+                  <div style={{fontSize:"0.67rem",color:C.textMid}}>{t.startTime}–{t.endTime}</div>
+                  {tNames.length>0&&<div style={{fontSize:"0.65rem",color:C.blue,marginTop:2}}>👨‍🏫 {tNames.join(", ")}</div>}
+                  <div style={{fontSize:"0.65rem",color:C.green}}>👨‍🎓 {sCount} students</div>
+                </div>;
+              })}
           </div>
         </div>;
       })}
     </div>
+
+    {/* Detailed List for Selected Day */}
     <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-      <div style={{background:C.navy,color:C.white,padding:"12px 16px",fontWeight:700}}>{selDay} — Detailed Schedule</div>
-      <table><thead><tr>{["Class","Shift","Start","End","Students","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+      <div style={{background:C.navy,color:C.white,padding:"12px 16px",fontWeight:700,fontSize:"0.9rem"}}>{selDay} — Detailed Schedule</div>
+      <table><thead><tr>{["Class","Shift","Time","Teachers Assigned","Students Assigned","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
         <tbody>
-          {dayTim.length===0&&<tr><td colSpan={6} style={{...S.td,textAlign:"center",padding:32,color:C.textLight}}>No classes on {selDay} — Click "+ Add Timing" to add</td></tr>}
+          {dayTim.length===0&&<tr><td colSpan={6} style={{...S.td,textAlign:"center",padding:32,color:C.textLight}}>No classes on {selDay}{isSA?" — Click '+ Add Timing' to add":""}</td></tr>}
           {dayTim.map(t=>{
-            const cnt=students.filter(s=>s.active&&s.class===t.class).length;
+            const assignedTeachers=(t.teacherIds||[]).map(id=>teachers.find(x=>x.id===id)).filter(Boolean);
+            const assignedStudents=(t.studentIds||[]).map(id=>students.find(x=>x.id===id)).filter(Boolean);
+            const classStudentCount=students.filter(s=>s.active&&s.class===t.class).length;
+            const displayStudents=assignedStudents.length>0?assignedStudents:students.filter(s=>s.active&&s.class===t.class);
             return <tr key={t.id} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
-              <td style={S.td}><span style={{fontWeight:700}}>{t.class}</span></td>
-              <td style={S.td}>{t.shift}</td>
-              <td style={S.td}><strong>{t.startTime}</strong></td>
-              <td style={S.td}><strong>{t.endTime}</strong></td>
-              <td style={S.td}><span style={{fontWeight:700,color:C.navy}}>{cnt} students</span></td>
-              <td style={S.td}><div style={{display:"flex",gap:5}}>
-                <button onClick={()=>{setForm({...t});setModal("edit");}} style={{...S.btnGhost,padding:"5px 9px",fontSize:"0.75rem"}}>Edit</button>
-                <button onClick={()=>{setClassTimings(p=>p.filter(x=>x.id!==t.id));showToast("Removed");}} style={{...S.btnDanger,padding:"5px 9px",fontSize:"0.75rem"}}>Remove</button>
-              </div></td>
+              <td style={S.td}><span style={{fontWeight:700,color:C.navy}}>{t.class}</span></td>
+              <td style={S.td}><span style={{fontSize:"0.8rem"}}>{t.shift}</span></td>
+              <td style={S.td}><span style={{fontWeight:700}}>{t.startTime}</span> — <span style={{fontWeight:700}}>{t.endTime}</span></td>
+              <td style={S.td}>
+                {assignedTeachers.length===0
+                  ?<span style={{color:C.textLight,fontSize:"0.8rem"}}>No teacher assigned</span>
+                  :<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                    {assignedTeachers.map(t2=><span key={t2.id} style={S.badge(C.blue,C.blueBg)}>👨‍🏫 {t2.name}</span>)}
+                  </div>}
+              </td>
+              <td style={S.td}>
+                <div>
+                  <div style={{fontWeight:700,color:C.green,fontSize:"0.85rem"}}>
+                    {assignedStudents.length>0?assignedStudents.length:classStudentCount} students
+                  </div>
+                  <div style={{fontSize:"0.7rem",color:C.textLight}}>
+                    {assignedStudents.length>0?"Specific assignment":"All from "+t.class}
+                  </div>
+                  {displayStudents.slice(0,3).map(s=><div key={s.id} style={{fontSize:"0.72rem",color:C.textMid}}>• {s.name}</div>)}
+                  {displayStudents.length>3&&<div style={{fontSize:"0.7rem",color:C.textLight}}>+{displayStudents.length-3} more</div>}
+                </div>
+              </td>
+              <td style={S.td}>{isSA&&<div style={{display:"flex",gap:5}}>
+                <button onClick={()=>openEdit(t)} style={{...S.btnGhost,padding:"5px 10px",fontSize:"0.75rem"}}>Edit</button>
+                <button onClick={()=>{setClassTimings(p=>p.filter(x=>x.id!==t.id));showT("Removed");}} style={{...S.btnDanger,padding:"5px 10px",fontSize:"0.75rem"}}>Remove</button>
+              </div>}</td>
             </tr>;
           })}
         </tbody>
       </table>
     </div>
-    {(modal==="add"||modal==="edit")&&form&&<Modal title={modal==="add"?"Add Timing":"Edit Timing"} onClose={()=>{setModal(null);setForm(null);}} width={400}>
-      <Field label="Class"><select value={form.class} onChange={e=>setForm({...form,class:e.target.value})} style={S.select}>{CLASSES2.map(c=><option key={c}>{c}</option>)}</select></Field>
-      <Field label="Day"><select value={form.day} onChange={e=>setForm({...form,day:e.target.value})} style={S.select}>{DAYS.map(d=><option key={d}>{d}</option>)}</select></Field>
-      <Field label="Shift"><select value={form.shift} onChange={e=>setForm({...form,shift:e.target.value})} style={S.select}><option>Morning</option><option>Afternoon</option><option>Evening</option></select></Field>
-      <G2><Field label="Start Time"><input type="time" value={form.startTime} onChange={e=>setForm({...form,startTime:e.target.value})} style={S.input}/></Field>
-        <Field label="End Time"><input type="time" value={form.endTime} onChange={e=>setForm({...form,endTime:e.target.value})} style={S.input}/></Field></G2>
-      <div style={{display:"flex",gap:10}}><button onClick={save} style={{...S.btnPrimary,flex:1}}>Save</button><button onClick={()=>{setModal(null);setForm(null);}} style={{...S.btnGhost,flex:1}}>Cancel</button></div>
+
+    {/* Add/Edit Modal */}
+    {(modal==="add"||modal==="edit")&&form&&<Modal title={modal==="add"?"Add Class Timing":"Edit Class Timing"} onClose={()=>{setModal(null);setForm(null);}} width={700}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
+        <Field label="Class *" mb={0}><select value={form.class} onChange={e=>setForm({...form,class:e.target.value})} style={S.select}>{CLASSES2.map(c=><option key={c}>{c}</option>)}</select></Field>
+        <Field label="Day" mb={0}><select value={form.day} onChange={e=>setForm({...form,day:e.target.value})} style={S.select}>{DAYS_ALL.map(d=><option key={d}>{d}</option>)}</select></Field>
+        <Field label="Shift" mb={0}><select value={form.shift} onChange={e=>setForm({...form,shift:e.target.value})} style={S.select}><option>Morning</option><option>Afternoon</option><option>Evening</option></select></Field>
+      </div>
+      <G2>
+        <Field label="Start Time"><input type="time" value={form.startTime} onChange={e=>setForm({...form,startTime:e.target.value})} style={S.input}/></Field>
+        <Field label="End Time"><input type="time" value={form.endTime} onChange={e=>setForm({...form,endTime:e.target.value})} style={S.input}/></Field>
+      </G2>
+
+      {/* Teacher Assignment */}
+      <div style={{marginBottom:14}}>
+        <label style={S.label}>Assign Teachers</label>
+        <div style={{background:C.bg,borderRadius:10,padding:12,border:`1px solid ${C.border}`,maxHeight:150,overflowY:"auto"}}>
+          {teachers.filter(t=>t.active).length===0&&<div style={{color:C.textLight,fontSize:"0.82rem"}}>No teachers available</div>}
+          {teachers.filter(t=>t.active).map(t=><label key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 4px",cursor:"pointer",borderBottom:`1px solid ${C.border}`}}>
+            <input type="checkbox" checked={(form.teacherIds||[]).includes(t.id)} onChange={()=>toggleTeacher(t.id)} style={{width:15,height:15}}/>
+            <span style={{fontWeight:600,fontSize:"0.88rem"}}>{t.name}</span>
+            <span style={{fontSize:"0.75rem",color:C.textLight}}>— {t.subjects.join(", ")}</span>
+          </label>)}
+        </div>
+      </div>
+
+      {/* Student Assignment */}
+      <div style={{marginBottom:14}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+          <label style={S.label}>Assign Students</label>
+          <button onClick={autoAssignClass} style={{...S.btnPrimary,padding:"4px 12px",fontSize:"0.75rem"}}>Auto-Assign All {form.class}</button>
+        </div>
+        <div style={{background:C.bg,borderRadius:10,padding:12,border:`1px solid ${C.border}`,maxHeight:180,overflowY:"auto"}}>
+          {students.filter(s=>s.active).length===0&&<div style={{color:C.textLight,fontSize:"0.82rem"}}>No students available</div>}
+          {students.filter(s=>s.active).map(s=><label key={s.id} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 4px",cursor:"pointer",borderBottom:`1px solid ${C.border}`,background:(form.studentIds||[]).includes(s.id)?C.greenBg:"transparent"}}>
+            <input type="checkbox" checked={(form.studentIds||[]).includes(s.id)} onChange={()=>toggleStudent(s.id)} style={{width:14,height:14}}/>
+            <span style={{fontWeight:600,fontSize:"0.85rem"}}>{s.name}</span>
+            <span style={{fontSize:"0.75rem",color:C.textLight,marginLeft:"auto"}}>({s.class})</span>
+          </label>)}
+        </div>
+        <div style={{marginTop:6,fontSize:"0.78rem",color:C.textMid}}>
+          ✓ {(form.studentIds||[]).length} students selected
+          {(form.studentIds||[]).length===0&&" — leave empty to auto-include all students of selected class"}
+        </div>
+      </div>
+
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={save} style={{...S.btnPrimary,flex:1}}>Save Timing</button>
+        <button onClick={()=>{setModal(null);setForm(null);}} style={{...S.btnGhost,flex:1}}>Cancel</button>
+      </div>
     </Modal>}
+  </div>;
+}
+
+function exportToExcel(data, filename, sheetName="Sheet1"){
+  try{
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    // Auto column widths
+    const cols = Object.keys(data[0]||{}).map(k=>({wch:Math.max(k.length,12)}));
+    ws['!cols'] = cols;
+    XLSX.writeFile(wb, filename+".xlsx");
+  }catch(e){alert("Excel export error: "+e.message);}
+}
+
+function exportTableToExcel(headers, rows, filename){
+  const data = rows.map(row=>{
+    const obj={};
+    headers.forEach((h,i)=>{obj[h]=row[i]||"";});
+    return obj;
+  });
+  exportToExcel(data, filename);
+}
+
+// ── SVG CHART HELPERS ─────────────────────────────────────────────────────────
+function BarChart({data,width=400,height=180,color=C.navy}){
+  if(!data||!data.length)return null;
+  const max=Math.max(...data.map(d=>d.value),1);
+  const barW=Math.floor((width-40)/data.length)-4;
+  return <svg width={width} height={height} style={{overflow:"visible"}}>
+    {data.map((d,i)=>{
+      const bh=Math.round(((d.value/max)*(height-40)));
+      const x=40+i*(barW+4);
+      const y=height-20-bh;
+      return <g key={i}>
+        <rect x={x} y={y} width={barW} height={bh} fill={d.color||color} rx={3} opacity={0.85}/>
+        <text x={x+barW/2} y={y-4} textAnchor="middle" fontSize={10} fill={C.text}>{d.value}</text>
+        <text x={x+barW/2} y={height-4} textAnchor="middle" fontSize={9} fill={C.textL}>{d.label}</text>
+      </g>;
+    })}
+    <line x1={38} y1={0} x2={38} y2={height-18} stroke={C.border} strokeWidth={1}/>
+    <line x1={38} y1={height-18} x2={width} y2={height-18} stroke={C.border} strokeWidth={1}/>
+  </svg>;
+}
+
+function PieChart({data,size=140}){
+  if(!data||!data.length)return null;
+  const total=data.reduce((a,d)=>a+d.value,0);
+  if(total===0)return<div style={{textAlign:"center",color:C.textL,fontSize:"0.82rem",padding:20}}>No data</div>;
+  let angle=0;
+  const cx=size/2,cy=size/2,r=size/2-8;
+  const slices=data.map(d=>{
+    const pct=d.value/total;
+    const startAngle=angle;
+    angle+=pct*2*Math.PI;
+    const x1=cx+r*Math.sin(startAngle),y1=cy-r*Math.cos(startAngle);
+    const x2=cx+r*Math.sin(angle),y2=cy-r*Math.cos(angle);
+    const large=pct>0.5?1:0;
+    return{...d,path:`M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z`,pct};
+  });
+  return <div style={{display:"flex",alignItems:"center",gap:12}}>
+    <svg width={size} height={size}>
+      {slices.map((s,i)=><path key={i} d={s.path} fill={s.color} stroke={C.white} strokeWidth={2}/>)}
+    </svg>
+    <div>{data.map((d,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
+      <div style={{width:10,height:10,borderRadius:2,background:d.color,flexShrink:0}}/>
+      <span style={{fontSize:"0.78rem",color:C.text}}>{d.label}: <b>{d.value}</b></span>
+    </div>)}</div>
+  </div>;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENHANCED DASHBOARD v6
+// ══════════════════════════════════════════════════════════════════════════════
+function Dashboard({students,teachers,att,settings,wpLog,timings}){
+  const active=students.filter(s=>s.active);
+  const todayKey=new Date().toISOString().split("T")[0];
+  const todayDay=DAYS[new Date().getDay()];
+  const todayTim=timings.filter(t=>t.day===todayDay);
+  const todayAtt=Object.entries(att).filter(([k])=>k.startsWith(todayKey));
+  const pT=todayAtt.filter(([,v])=>v.status==="present").length;
+  const aT=todayAtt.filter(([,v])=>v.status==="absent").length;
+  const lT=todayAtt.filter(([,v])=>v.status==="late").length;
+  const tmKey=`${CY}-${CM}`;
+  const tmF=active.map(s=>s.fees[tmKey]).filter(Boolean);
+  const coll=tmF.reduce((a,f)=>a+f.paid,0);
+  const pend=tmF.reduce((a,f)=>a+Math.max(0,(f.totalFee-(f.discount||0))-f.paid),0);
+  const totDue=active.flatMap(s=>Object.values(s.fees)).reduce((a,f)=>a+Math.max(0,(f.totalFee-(f.discount||0))-f.paid),0);
+  const totalMonthFee=active.reduce((a,s)=>a+s.subjects.reduce((b,x)=>b+(parseInt(x.fee)||0),0),0);
+  const attPct=active.length>0?Math.round(((pT+lT)/Math.max(active.length,1))*100):0;
+
+  // Monthly attendance trend (last 7 days)
+  const last7=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const dk=d.toISOString().split("T")[0];
+    const dayAtt=Object.entries(att).filter(([k])=>k.startsWith(dk));
+    const p=dayAtt.filter(([,v])=>v.status==="present").length;
+    const a=dayAtt.filter(([,v])=>v.status==="absent").length;
+    last7.push({label:["S","M","T","W","T","F","S"][d.getDay()],value:p,absent:a,color:C.green});
+  }
+
+  // Fee collection pie
+  const feePie=[
+    {label:"Collected",value:coll,color:C.green},
+    {label:"Pending",value:pend,color:C.red},
+  ];
+
+  // Class-wise attendance
+  const classAtt=CLASSES.filter(cls=>active.some(s=>s.class===cls)).map(cls=>{
+    const clsStudents=active.filter(s=>s.class===cls);
+    const clsPres=clsStudents.filter(s=>att[`${todayKey}-${s.id}`]?.status==="present"||att[`${todayKey}-${s.id}`]?.status==="late").length;
+    return{cls,total:clsStudents.length,present:clsPres};
+  });
+
+  const stats=[
+    {l:"Total Students",v:active.length,s:`${teachers.filter(t=>t.active).length} teachers`,c:C.navy},
+    {l:"Present Today",v:pT,s:`${lT} late · ${aT} absent`,c:C.green},
+    {l:"Attendance Rate",v:attPct+"%",s:"Today",c:attPct>=75?C.green:C.red},
+    {l:"Collected",v:`Rs.${fmt(coll)}`,s:MONTHS[CM],c:C.green},
+    {l:"Pending Fees",v:`Rs.${fmt(pend)}`,s:"This month",c:C.red},
+    {l:"Total Outstanding",v:`Rs.${fmt(totDue)}`,s:"All time",c:C.yellow},
+  ];
+
+  function exportDashboard(){
+    exportToExcel([
+      {Metric:"Total Students",Value:active.length},
+      {Metric:"Total Teachers",Value:teachers.filter(t=>t.active).length},
+      {Metric:"Present Today",Value:pT},
+      {Metric:"Absent Today",Value:aT},
+      {Metric:"Late Today",Value:lT},
+      {Metric:"Attendance Rate Today",Value:attPct+"%"},
+      {Metric:"Fee Collected ("+MONTHS[CM]+")",Value:"Rs."+fmt(coll)},
+      {Metric:"Fee Pending ("+MONTHS[CM]+")",Value:"Rs."+fmt(pend)},
+      {Metric:"Total Outstanding",Value:"Rs."+fmt(totDue)},
+    ],"Dashboard_Summary_"+todayKey);
+  }
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <div>
+        <div style={{fontWeight:900,fontSize:"1.1rem",color:C.navy}}>Good {new Date().getHours()<12?"Morning":"Afternoon"}! 👋</div>
+        <div style={{color:C.textL,fontSize:"0.82rem"}}>{new Date().toLocaleDateString("en-PK",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div>
+      </div>
+      <button onClick={exportDashboard} style={{...S.btnGhost,padding:"8px 14px",fontSize:"0.8rem"}}>📥 Export Summary</button>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(175px,1fr))",gap:12,marginBottom:16}}>
+      {stats.map(st=><div key={st.l} style={{background:C.white,borderRadius:12,padding:"14px 18px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",borderTop:`3px solid ${st.c}`}}>
+        <div style={{fontSize:"0.66rem",color:C.textL,fontWeight:700,textTransform:"uppercase",marginBottom:5}}>{st.l}</div>
+        <div style={{fontSize:"1.3rem",fontWeight:900,color:st.c,marginBottom:2}}>{st.v}</div>
+        <div style={{fontSize:"0.7rem",color:C.textL}}>{st.s}</div>
+      </div>)}
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1.6fr 1fr",gap:14,marginBottom:14}}>
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <ST title="Attendance — Last 7 Days"/>
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <BarChart data={last7} width={380} height={150} color={C.green}/>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginTop:10}}>
+          {[["Present",pT,C.green,C.greenBg],["Late",lT,C.yellow,C.yellowBg],["Absent",aT,C.red,C.redBg]].map(([l,v,c,bg])=>
+            <div key={l} style={{background:bg,borderRadius:8,padding:"8px 12px",textAlign:"center"}}>
+              <div style={{fontSize:"0.65rem",color:c,fontWeight:700,textTransform:"uppercase"}}>{l}</div>
+              <div style={{fontSize:"1.3rem",fontWeight:900,color:c}}>{v}</div>
+            </div>)}
+        </div>
+      </div>
+      <div style={S.card}>
+        <ST title={`Fee — ${MONTHS[CM]}`}/>
+        <PieChart data={feePie} size={130}/>
+        <div style={{marginTop:10,background:C.bg,borderRadius:8,padding:"8px 12px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:"0.8rem",marginBottom:4}}><span style={{color:C.textM}}>Total Billed</span><span style={{fontWeight:700}}>Rs.{fmt(totalMonthFee)}</span></div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:"0.8rem"}}><span style={{color:C.textM}}>Collection Rate</span><span style={{fontWeight:700,color:totalMonthFee>0?C.green:C.textL}}>{totalMonthFee>0?Math.round((coll/totalMonthFee)*100):0}%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+      <div style={S.card}>
+        <ST title="Today's Schedule"/>
+        {todayTim.length===0?<div style={{textAlign:"center",padding:20,color:C.textL}}>No classes today</div>
+          :<div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {todayTim.sort((a,b)=>a.startTime.localeCompare(b.startTime)).map(ct=>{
+              const cnt=students.filter(s=>s.active&&s.class===ct.class).length;
+              const pres=students.filter(s=>s.active&&s.class===ct.class&&att[`${todayKey}-${s.id}`]?.status==="present").length;
+              return <div key={ct.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.bg,borderRadius:8,padding:"8px 12px",borderLeft:`3px solid ${C.gold}`}}>
+                <div><div style={{fontWeight:700,fontSize:"0.85rem"}}>{ct.class}</div><div style={{fontSize:"0.7rem",color:C.textM}}>{ct.startTime}–{ct.endTime} · {ct.shift}</div></div>
+                <div style={{textAlign:"right"}}><div style={{fontWeight:700,fontSize:"0.85rem",color:C.green}}>{pres}/{cnt}</div><div style={{fontSize:"0.7rem",color:C.textL}}>present</div></div>
+              </div>;
+            })}
+          </div>}
+      </div>
+      <div style={S.card}>
+        <ST title="Fee Defaulters"/>
+        {active.filter(s=>{const f=s.fees[tmKey];return f&&f.status!=="paid";}).slice(0,6).map(s=>{
+          const f=s.fees[tmKey],bal=f?Math.max(0,(f.totalFee-(f.discount||0))-f.paid):0;
+          return <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${C.border}`}}>
+            <div><div style={{fontWeight:700,fontSize:"0.84rem"}}>{s.name}</div><div style={{fontSize:"0.68rem",color:C.textL}}>{s.class}</div></div>
+            <div style={{textAlign:"right"}}><div style={{fontWeight:800,color:C.red,fontSize:"0.84rem"}}>Rs.{fmt(bal)}</div><Badge status={f?.status||"unpaid"}/></div>
+          </div>;
+        })}
+        {active.filter(s=>{const f=s.fees[tmKey];return f&&f.status!=="paid";}).length===0&&<div style={{textAlign:"center",padding:20,color:C.green,fontWeight:700}}>✅ All fees collected!</div>}
+      </div>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+      <div style={S.card}>
+        <ST title="Class-wise Attendance Today"/>
+        {classAtt.length===0?<div style={{textAlign:"center",padding:20,color:C.textL}}>No data</div>
+          :<div>{classAtt.map(({cls,total,present})=>{
+            const pct=total>0?Math.round((present/total)*100):0;
+            return <div key={cls} style={{marginBottom:8}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3,fontSize:"0.82rem"}}>
+                <span style={{fontWeight:600}}>{cls}</span>
+                <span style={{color:pct>=75?C.green:pct>=50?C.gold:C.red,fontWeight:700}}>{present}/{total} ({pct}%)</span>
+              </div>
+              <div style={{background:C.border,borderRadius:4,height:6,overflow:"hidden"}}>
+                <div style={{width:pct+"%",height:"100%",background:pct>=75?C.green:pct>=50?C.gold:C.red,transition:"width 0.5s"}}/>
+              </div>
+            </div>;
+          })}</div>}
+      </div>
+      <div style={S.card}>
+        <ST title="Recent Alerts"/>
+        {wpLog.length===0?<div style={{textAlign:"center",padding:20,color:C.textL}}>No alerts yet</div>
+          :wpLog.slice(0,6).map(a=><div key={a.id} style={{padding:"6px 0",borderBottom:`1px solid ${C.border}`,fontSize:"0.8rem"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontWeight:700}}>{a.studentName}</span>
+              <span style={S.badge(a.type?.includes("Absent")?C.red:C.yellow,a.type?.includes("Absent")?C.redBg:C.yellowBg)}>{a.type}</span>
+            </div>
+            <div style={{color:C.textL,fontSize:"0.7rem"}}>{a.time}</div>
+          </div>)}
+      </div>
+    </div>
+  </div>;
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LEAVE MANAGEMENT MODULE
+// ══════════════════════════════════════════════════════════════════════════════
+function LeaveManagement({students,teachers,showT,isSA}){
+  const[leaves,setLeaves]=useState(()=>loadLS("aa_leaves",[]));
+  const[modal,setModal]=useState(null);
+  const[form,setForm]=useState({type:"student",personId:"",fromDate:new Date().toISOString().split("T")[0],toDate:new Date().toISOString().split("T")[0],reason:"",status:"pending"});
+  const[filter,setFilter]=useState("all");
+
+  useEffect(()=>saveLS("aa_leaves",leaves),[leaves]);
+
+  function apply(){
+    if(!form.personId||!form.reason.trim()){showT("Fill all fields","error");return;}
+    const newLeave={...form,id:gid(),appliedDate:new Date().toISOString().split("T")[0],appliedTime:new Date().toLocaleTimeString()};
+    setLeaves(p=>[newLeave,...p]);
+    showT("Leave application submitted!");
+    setModal(null);
+  }
+
+  function updateStatus(id,status){
+    setLeaves(p=>p.map(l=>l.id===id?{...l,status,updatedDate:new Date().toISOString().split("T")[0]}:l));
+    showT("Leave status updated!");
+  }
+
+  function exportLeaves(){
+    const data=filtered.map(l=>{
+      const person=l.type==="student"?students.find(s=>s.id===l.personId):teachers.find(t=>t.id===l.personId);
+      return{"Name":person?.name||"—","Type":l.type,"From":l.fromDate,"To":l.toDate,"Days":Math.ceil((new Date(l.toDate)-new Date(l.fromDate))/(1000*60*60*24))+1,"Reason":l.reason,"Status":l.status,"Applied":l.appliedDate};
+    });
+    exportToExcel(data,"Leave_Report_"+new Date().toISOString().split("T")[0]);
+  }
+
+  const filtered=leaves.filter(l=>filter==="all"||l.status===filter||l.type===filter);
+  const stats={pending:leaves.filter(l=>l.status==="pending").length,approved:leaves.filter(l=>l.status==="approved").length,rejected:leaves.filter(l=>l.status==="rejected").length};
+
+  return <div>
+    <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+      <div style={{display:"flex",background:C.bg,borderRadius:9,border:`1px solid ${C.border}`,overflow:"hidden"}}>
+        {[["all","All"],["pending","Pending"],["approved","Approved"],["rejected","Rejected"],["student","Students"],["teacher","Teachers"]].map(([v,l])=>
+          <button key={v} onClick={()=>setFilter(v)} style={{padding:"8px 12px",background:filter===v?C.navy:"transparent",color:filter===v?C.white:C.text,border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.78rem",fontFamily:"inherit"}}>{l}</button>)}
+      </div>
+      <button onClick={()=>setModal("add")} style={S.btnPrimary}>+ Apply Leave</button>
+      <button onClick={exportLeaves} style={{...S.btnGhost,padding:"9px 14px",fontSize:"0.82rem"}}>📥 Excel</button>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:14}}>
+      {[["Pending",stats.pending,C.yellow,C.yellowBg],["Approved",stats.approved,C.green,C.greenBg],["Rejected",stats.rejected,C.red,C.redBg]].map(([l,v,c,bg])=>
+        <div key={l} style={{background:bg,borderRadius:10,padding:"12px 16px",borderLeft:`3px solid ${c}`}}>
+          <div style={{fontSize:"0.7rem",color:c,fontWeight:700,textTransform:"uppercase"}}>{l}</div>
+          <div style={{fontSize:"1.5rem",fontWeight:900,color:c}}>{v}</div>
+        </div>)}
+    </div>
+
+    <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <table><thead><tr>{["Name","Type","From","To","Days","Reason","Status","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <tbody>{filtered.length===0&&<tr><td colSpan={8} style={{...S.td,textAlign:"center",padding:40,color:C.textL}}>No leave records</td></tr>}
+          {filtered.map(l=>{
+            const person=l.type==="student"?students.find(s=>s.id===l.personId):teachers.find(t=>t.id===l.personId);
+            const days=Math.ceil((new Date(l.toDate)-new Date(l.fromDate))/(1000*60*60*24))+1;
+            const sc=l.status==="approved"?C.green:l.status==="rejected"?C.red:C.yellow;
+            const sbg=l.status==="approved"?C.greenBg:l.status==="rejected"?C.redBg:C.yellowBg;
+            return <tr key={l.id} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+              <td style={S.td}><div style={{fontWeight:700}}>{person?.name||"Unknown"}</div><div style={{fontSize:"0.7rem",color:C.textL}}>{person?.class||person?.subjects?.join(", ")||""}</div></td>
+              <td style={S.td}><span style={S.badge(l.type==="student"?C.blue:C.gold,l.type==="student"?C.blueBg:"#fff3cd")}>{l.type}</span></td>
+              <td style={S.td}>{l.fromDate}</td>
+              <td style={S.td}>{l.toDate}</td>
+              <td style={S.td}><span style={{fontWeight:700}}>{days}</span></td>
+              <td style={S.td}><span style={{fontSize:"0.82rem"}}>{l.reason}</span></td>
+              <td style={S.td}><span style={S.badge(sc,sbg)}>{l.status.charAt(0).toUpperCase()+l.status.slice(1)}</span></td>
+              <td style={S.td}>{isSA&&l.status==="pending"&&<div style={{display:"flex",gap:5}}>
+                <button onClick={()=>updateStatus(l.id,"approved")} style={{...S.btnGreen,padding:"5px 9px",fontSize:"0.75rem"}}>Approve</button>
+                <button onClick={()=>updateStatus(l.id,"rejected")} style={{...S.btnDanger,padding:"5px 9px",fontSize:"0.75rem"}}>Reject</button>
+              </div>}
+              {isSA&&l.status!=="pending"&&<button onClick={()=>setLeaves(p=>p.filter(x=>x.id!==l.id))} style={{...S.btnDanger,padding:"5px 9px",fontSize:"0.75rem"}}>Delete</button>}
+              </td>
+            </tr>;
+          })}
+        </tbody>
+      </table>
+    </div>
+
+    {modal==="add"&&<Modal title="Apply for Leave" onClose={()=>setModal(null)} width={480}>
+      <G2>
+        <Field label="Type"><select value={form.type} onChange={e=>setForm({...form,type:e.target.value,personId:""})} style={S.select}><option value="student">Student</option><option value="teacher">Teacher</option></select></Field>
+        <Field label={form.type==="student"?"Select Student":"Select Teacher"}>
+          <select value={form.personId} onChange={e=>setForm({...form,personId:e.target.value})} style={S.select}>
+            <option value="">— Select —</option>
+            {(form.type==="student"?students.filter(s=>s.active):teachers.filter(t=>t.active)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </Field>
+      </G2>
+      <G2>
+        <Field label="From Date"><input type="date" value={form.fromDate} onChange={e=>setForm({...form,fromDate:e.target.value})} style={S.input}/></Field>
+        <Field label="To Date"><input type="date" value={form.toDate} onChange={e=>setForm({...form,toDate:e.target.value})} style={S.input}/></Field>
+      </G2>
+      <Field label="Reason for Leave"><textarea value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})} style={{...S.input,height:80,resize:"vertical"}} placeholder="Enter reason..."/></Field>
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={apply} style={{...S.btnPrimary,flex:1}}>Submit Application</button>
+        <button onClick={()=>setModal(null)} style={{...S.btnGhost,flex:1}}>Cancel</button>
+      </div>
+    </Modal>}
+  </div>;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DEVICE MANAGEMENT MODULE
+// ══════════════════════════════════════════════════════════════════════════════
+function DeviceManagement({settings,setSettings,showT}){
+  const[devices,setDevices]=useState(()=>loadLS("aa_devices",[{id:gid(),name:"Main Entrance",ip:"192.168.1.201",port:"4370",type:"ZKTeco K50",status:"active",location:"Main Gate",lastSync:"Never"}]));
+  const[modal,setModal]=useState(null);
+  const[form,setForm]=useState(null);
+  const[testing,setTesting]=useState(null);
+
+  useEffect(()=>saveLS("aa_devices",devices),[devices]);
+
+  function testDevice(device){
+    setTesting(device.id);
+    setTimeout(()=>{
+      setTesting(null);
+      showT(`Device ${device.name} — Connection test completed`);
+    },2000);
+  }
+
+  function save(){
+    if(!form.name||!form.ip){showT("Name and IP required","error");return;}
+    if(modal==="add")setDevices(p=>[...p,{...form,id:gid()}]);
+    else setDevices(p=>p.map(d=>d.id===form.id?form:d));
+    showT("Device saved!");setModal(null);setForm(null);
+  }
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div><div style={{fontWeight:800,fontSize:"1rem",color:C.navy}}>Fingerprint Devices</div><div style={{fontSize:"0.8rem",color:C.textL}}>Manage ZKTeco devices connected to the network</div></div>
+      <button onClick={()=>{setForm({name:"",ip:"",port:"4370",type:"ZKTeco K50",location:"",status:"active"});setModal("add");}} style={S.btnPrimary}>+ Add Device</button>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14,marginBottom:14}}>
+      {devices.map(d=><div key={d.id} style={{background:C.white,borderRadius:12,padding:"18px 20px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)",border:`2px solid ${d.status==="active"?C.green:C.border}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+          <div>
+            <div style={{fontWeight:800,fontSize:"0.95rem",color:C.navy}}>{d.name}</div>
+            <div style={{fontSize:"0.75rem",color:C.textL}}>{d.location}</div>
+          </div>
+          <span style={S.badge(d.status==="active"?C.green:C.red,d.status==="active"?C.greenBg:C.redBg)}>{d.status}</span>
+        </div>
+        <div style={{background:C.bg,borderRadius:8,padding:"10px 12px",marginBottom:12}}>
+          {[["Model",d.type],["IP Address",d.ip],["Port",d.port],["Last Sync",d.lastSync||"Never"]].map(([k,v])=>
+            <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",fontSize:"0.8rem"}}>
+              <span style={{color:C.textL}}>{k}</span>
+              <span style={{fontWeight:700,fontFamily:k==="IP Address"||k==="Port"?"monospace":"inherit"}}>{v}</span>
+            </div>)}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>testDevice(d)} disabled={testing===d.id} style={{...S.btnGreen,flex:1,padding:"7px",fontSize:"0.78rem",opacity:testing===d.id?0.7:1}}>{testing===d.id?"Testing...":"Test Connection"}</button>
+          <button onClick={()=>{setForm({...d});setModal("edit");}} style={{...S.btnGhost,padding:"7px 12px",fontSize:"0.78rem"}}>Edit</button>
+          <button onClick={()=>{setDevices(p=>p.filter(x=>x.id!==d.id));showT("Removed");}} style={{...S.btnDanger,padding:"7px 12px",fontSize:"0.78rem"}}>×</button>
+        </div>
+      </div>)}
+    </div>
+
+    <div style={S.card}>
+      <ST title="ZKTeco K50 — Setup Guide"/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+        {[["Physical Setup",["Mount device near entrance","Connect LAN cable to router","Connect power adapter","Device will turn on automatically"]],["Device IP Config",["Press Menu on K50","Go to Communication","Select Ethernet","Set IP: 192.168.1.201","Gateway: 192.168.1.1","OK → Restart"]],["Register Fingerprints",["Menu → User Management","Add User → Enter ID","Enter Name","Scan finger 3 times","Same ID in web system → Device ID field"]],["Bridge Script",["Download K50-Bridge-Script.zip","Edit config.js with Supabase key","Run START.bat on academy laptop","Must be connected to same WiFi/LAN"]]].map(([title,steps])=>
+          <div key={title} style={{background:C.bg,borderRadius:8,padding:"12px 14px"}}>
+            <div style={{fontWeight:700,color:C.navy,marginBottom:8,fontSize:"0.85rem"}}>{title}</div>
+            {steps.map((s,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:5,fontSize:"0.8rem",color:C.textM}}>
+              <span style={{background:C.navy,color:C.white,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.65rem",fontWeight:700,flexShrink:0}}>{i+1}</span>
+              {s}
+            </div>)}
+          </div>)}
+      </div>
+    </div>
+
+    {(modal==="add"||modal==="edit")&&form&&<Modal title={modal==="add"?"Add Device":"Edit Device"} onClose={()=>{setModal(null);setForm(null);}}>
+      <G2><Field label="Device Name *"><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={S.input} placeholder="e.g. Main Entrance"/></Field>
+        <Field label="Location"><input value={form.location||""} onChange={e=>setForm({...form,location:e.target.value})} style={S.input} placeholder="e.g. Main Gate"/></Field></G2>
+      <G2><Field label="IP Address *"><input value={form.ip} onChange={e=>setForm({...form,ip:e.target.value})} style={{...S.input,fontFamily:"monospace"}} placeholder="192.168.1.201"/></Field>
+        <Field label="Port"><input value={form.port||"4370"} onChange={e=>setForm({...form,port:e.target.value})} style={{...S.input,fontFamily:"monospace"}}/></Field></G2>
+      <G2><Field label="Device Model"><select value={form.type||"ZKTeco K50"} onChange={e=>setForm({...form,type:e.target.value})} style={S.select}><option>ZKTeco K50</option><option>ZKTeco K40</option><option>ZKTeco F22</option><option>Other ZKTeco</option></select></Field>
+        <Field label="Status"><select value={form.status||"active"} onChange={e=>setForm({...form,status:e.target.value})} style={S.select}><option value="active">Active</option><option value="inactive">Inactive</option><option value="maintenance">Maintenance</option></select></Field></G2>
+      <div style={{display:"flex",gap:10}}><button onClick={save} style={{...S.btnPrimary,flex:1}}>Save Device</button><button onClick={()=>{setModal(null);setForm(null);}} style={{...S.btnGhost,flex:1}}>Cancel</button></div>
+    </Modal>}
+  </div>;
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENHANCED REPORTS v6 - with Excel + PDF export
+// ══════════════════════════════════════════════════════════════════════════════
+function Reports({students,teachers,attendance,teacherAtt,settings}){
+  const[rType,setRType]=useState("fee");
+  const[month,setMonth]=useState(CM);
+  const[year,setYear]=useState(CY);
+  const[selStudent,setSelStudent]=useState("");
+  const[selTeacher,setSelTeacher]=useState("");
+  const[dateFrom,setDateFrom]=useState(new Date(CY,CM,1).toISOString().split("T")[0]);
+  const[dateTo,setDateTo]=useState(new Date().toISOString().split("T")[0]);
+  const active=students.filter(s=>s.active);
+  const key=`${year}-${month}`;
+
+  // Fee report data
+  const feeReport=active.map(s=>{
+    const f=s.fees[key];
+    const net=f?(f.totalFee-(f.discount||0)):0;
+    return{id:s.id,name:s.name,class:s.class,fee:f?.totalFee||0,discount:f?.discount||0,net,paid:f?.paid||0,balance:Math.max(0,net-(f?.paid||0)),status:f?.status||"no record"};
+  });
+  const tFee=feeReport.reduce((a,r)=>a+r.fee,0);
+  const tPaid=feeReport.reduce((a,r)=>a+r.paid,0);
+  const tBal=feeReport.reduce((a,r)=>a+r.balance,0);
+
+  // Teacher commission
+  const teacherReport=teachers.filter(t=>t.active).map(t=>{
+    const assigned=active.filter(s=>s.subjects.some(x=>x.teacherId===t.id));
+    const totalReceived=assigned.reduce((a,s)=>{const f=s.fees[key];return a+(f?f.paid:0);},0);
+    const commission=t.commissionType==="percentage"?Math.round(totalReceived*(t.commissionValue/100)):assigned.length*(parseInt(t.commissionValue)||0);
+    return{name:t.name,students:assigned.length,received:totalReceived,commission,rate:t.commissionType==="percentage"?t.commissionValue+"%":"Rs."+t.commissionValue+"/student"};
+  });
+
+  // Attendance report
+  const attReport=active.map(s=>{
+    const keys=Object.keys(attendance).filter(k=>k.endsWith(`-${s.id}`)&&k>=`${dateFrom}-`&&k<=`${dateTo}-z`);
+    const p=keys.filter(k=>attendance[k].status==="present").length;
+    const l=keys.filter(k=>attendance[k].status==="late").length;
+    const a=keys.filter(k=>attendance[k].status==="absent").length;
+    const rate=keys.length>0?Math.round(((p+l)/keys.length)*100):0;
+    return{id:s.id,name:s.name,class:s.class,present:p,late:l,absent:a,total:keys.length,rate};
+  });
+
+  const tAttReport=teachers.filter(t=>t.active).map(t=>{
+    const keys=Object.keys(teacherAtt).filter(k=>k.endsWith(`-${t.id}`)&&k>=`${dateFrom}-`&&k<=`${dateTo}-z`);
+    const p=keys.filter(k=>teacherAtt[k].status==="present").length;
+    const l=keys.filter(k=>teacherAtt[k].status==="late").length;
+    const a=keys.filter(k=>teacherAtt[k].status==="absent").length;
+    return{name:t.name,present:p,late:l,absent:a,total:keys.length,rate:keys.length>0?Math.round(((p+l)/keys.length)*100):0};
+  });
+
+  // Excel exports
+  function exFee(){exportToExcel(feeReport.map(r=>({Student:r.name,Class:r.class,Fee:"Rs."+fmt(r.fee),Discount:"Rs."+fmt(r.discount),Net:"Rs."+fmt(r.net),Paid:"Rs."+fmt(r.paid),Balance:"Rs."+fmt(r.balance),Status:r.status})),`Fee_Report_${MONTHS[month]}_${year}`);}
+  function exTeacher(){exportToExcel(teacherReport.map(r=>({Teacher:r.name,Students:r.students,"Fee Received":"Rs."+fmt(r.received),"Commission Rate":r.rate,"Commission Due":"Rs."+fmt(r.commission)})),`Teacher_Commission_${MONTHS[month]}_${year}`);}
+  function exAtt(){exportToExcel(attReport.map(r=>({Student:r.name,Class:r.class,Present:r.present,Late:r.late,Absent:r.absent,Total:r.total,Rate:r.rate+"%"})),`Student_Attendance_${dateFrom}_to_${dateTo}`);}
+  function exTAtt(){exportToExcel(tAttReport.map(r=>({Teacher:r.name,Present:r.present,Late:r.late,Absent:r.absent,Total:r.total,Rate:r.rate+"%"})),`Teacher_Attendance_${dateFrom}_to_${dateTo}`);}
+
+  // PDF print for individual
+  function printIndPDF(person,records,type){
+    const p=records.filter(r=>r.status==="present").length,l=records.filter(r=>r.status==="late").length,a=records.filter(r=>r.status==="absent").length;
+    const rate=records.length>0?Math.round(((p+l)/records.length)*100):0;
+    const rows=records.map(r=>{const c=r.status==="present"?"#1a7a42":r.status==="late"?"#b07000":r.status==="absent"?"#b02020":"#555";const bg=r.status==="present"?"#f0faf4":r.status==="late"?"#fffbf0":r.status==="absent"?"#fff5f5":"white";return`<tr style="background:${bg};"><td style="padding:5px 10px;border-bottom:1px solid #eee;">${r.date}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;">${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(r.date).getDay()]}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;font-weight:700;color:${c};">${r.status?r.status.charAt(0).toUpperCase()+r.status.slice(1):"—"}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;">${r.in_time||"—"}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;">${r.out_time||"—"}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;">${r.total_hours||"—"}</td></tr>`;}).join("");
+    const win=window.open("","_blank");
+    win.document.write(`<!DOCTYPE html><html><head><title>Attendance — ${person.name}</title><style>*{box-sizing:border-box;}body{font-family:"Segoe UI",sans-serif;margin:0;}@media print{.np{display:none}@page{size:A4;margin:10mm;}}</style></head><body><div class="np" style="padding:10px 20px;background:#f0f4f8;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;color:#0f2744;">${person.name} — Attendance Report</span><button onclick="window.print()" style="background:#0f2744;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:700;">Print PDF</button></div><div style="background:#0f2744;color:white;padding:14px 24px;"><div style="font-size:1rem;font-weight:900;">${settings.academyName.toUpperCase()}</div><div style="opacity:0.65;font-size:0.72rem;">${type} ATTENDANCE REPORT</div></div><div style="padding:16px 24px;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;"><div style="border:1px solid #d0dce8;border-radius:8px;padding:12px;"><div style="font-size:0.75rem;font-weight:700;color:#0f2744;margin-bottom:8px;">INFORMATION</div>${[["Name",person.name],type==="Student"?["Father",person.fatherName||"—"]:["Phone",person.phone||"—"],[type==="Student"?"Class":"Role",type==="Student"?person.class:"Teacher"]].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #eee;font-size:0.82rem;"><span style="color:#7a8ba0;">${k}</span><span style="font-weight:700;">${v}</span></div>`).join("")}</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">${[["Present",p,"#1a7a42","#e6f4ec"],["Late",l,"#b07000","#fff4e0"],["Absent",a,"#b02020","#fde8e8"],["Rate",rate+"%","#0f2744","#e8f0fb"]].map(([n,v,c,bg])=>`<div style="background:${bg};border-radius:8px;padding:10px;text-align:center;"><div style="font-size:0.62rem;color:${c};font-weight:700;text-transform:uppercase;">${n}</div><div style="font-size:1.3rem;font-weight:900;color:${c};">${v}</div></div>`).join("")}</div></div><table style="width:100%;border:1px solid #d0dce8;border-radius:8px;overflow:hidden;"><thead><tr style="background:#0f2744;color:white;">${["Date","Day","Status","Sign In","Sign Out","Hours"].map(h=>`<th style="padding:8px 10px;text-align:left;font-size:0.75rem;">${h}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table><div style="display:flex;justify-content:space-between;margin-top:24px;padding-top:14px;border-top:2px solid #d0dce8;"><div style="text-align:center;min-width:140px;"><div style="border-top:1px solid #333;padding-top:5px;margin-top:32px;font-size:0.72rem;">Signature</div><div style="font-size:0.7rem;color:#aaa;">${person.name}</div></div><div style="text-align:center;min-width:140px;"><div style="border-top:1px solid #333;padding-top:5px;margin-top:32px;font-size:0.72rem;">Administration</div></div></div><div style="margin-top:10px;text-align:center;font-size:0.62rem;color:#aaa;">Generated: ${new Date().toLocaleString()}</div></div></body></html>`);
+    win.document.close();
+  }
+
+  const TABS=[["fee","💰 Fee Collection"],["teacher","👨‍🏫 Commission"],["attendance","📋 Student Att."],["teacherAtt","🕐 Teacher Att."]];
+
+  return <div>
+    <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+      <div style={{display:"flex",background:C.bg,borderRadius:9,border:`1px solid ${C.border}`,overflow:"hidden",flexWrap:"wrap"}}>
+        {TABS.map(([id,label])=><button key={id} onClick={()=>setRType(id)} style={{padding:"9px 13px",background:rType===id?C.navy:"transparent",color:rType===id?C.white:C.text,border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.8rem",fontFamily:"inherit"}}>{label}</button>)}
+      </div>
+      {(rType==="fee"||rType==="teacher")&&<div style={{display:"flex",gap:8}}>
+        <select value={month} onChange={e=>setMonth(parseInt(e.target.value))} style={{...S.select,width:"auto"}}>{MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}</select>
+        <select value={year} onChange={e=>setYear(parseInt(e.target.value))} style={{...S.select,width:"auto"}}>{[CY-1,CY,CY+1].map(y=><option key={y}>{y}</option>)}</select>
+      </div>}
+      {(rType==="attendance"||rType==="teacherAtt")&&<div style={{display:"flex",gap:8,alignItems:"center"}}>
+        <span style={{fontSize:"0.8rem",color:C.textL}}>From</span>
+        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} style={{...S.input,width:"auto"}}/>
+        <span style={{fontSize:"0.8rem",color:C.textL}}>To</span>
+        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} style={{...S.input,width:"auto"}}/>
+      </div>}
+    </div>
+
+    {/* FEE COLLECTION */}
+    {rType==="fee"&&<div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:12}}>
+        {[["Total Billed",fmt(tFee),C.navy],["Collected",fmt(tPaid),C.green],["Outstanding",fmt(tBal),C.red]].map(([l,v,c])=>
+          <div key={l} style={{background:C.white,borderRadius:10,padding:"14px 18px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",borderTop:`3px solid ${c}`}}>
+            <div style={{fontSize:"0.7rem",color:C.textL,fontWeight:700,textTransform:"uppercase",marginBottom:5}}>{l}</div>
+            <div style={{fontSize:"1.3rem",fontWeight:900,color:c}}>Rs.{v}</div>
+          </div>)}
+      </div>
+      <div style={{display:"flex",gap:8,marginBottom:8,justifyContent:"flex-end"}}>
+        <button onClick={exFee} style={{...S.btnGhost,padding:"7px 14px",fontSize:"0.8rem"}}>📥 Excel</button>
+        <button onClick={()=>printReportPDF(`Fee Collection — ${MONTHS[month]} ${year}`,["Student","Class","Fee","Discount","Net","Paid","Balance","Status"],feeReport.map(r=>[r.name,r.class,"Rs."+fmt(r.fee),"Rs."+fmt(r.discount),"Rs."+fmt(r.net),"Rs."+fmt(r.paid),"Rs."+fmt(r.balance),r.status]),[["Billed","Rs."+fmt(tFee),"navy"],["Collected","Rs."+fmt(tPaid),"green"],["Outstanding","Rs."+fmt(tBal),"red"]],settings)} style={{...S.btnG,padding:"7px 14px",fontSize:"0.8rem"}}>🖨 Print PDF</button>
+      </div>
+      <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+        <table><thead><tr>{["Student","Class","Fee","Discount","Net","Paid","Balance","Status"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{feeReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td><td style={S.td}>{r.class}</td>
+            <td style={S.td}>Rs.{fmt(r.fee)}</td>
+            <td style={S.td}>{r.discount>0?<span style={{color:C.green}}>Rs.{fmt(r.discount)}</span>:"—"}</td>
+            <td style={S.td}><b>Rs.{fmt(r.net)}</b></td>
+            <td style={S.td}><span style={{color:C.green,fontWeight:700}}>Rs.{fmt(r.paid)}</span></td>
+            <td style={S.td}><span style={{color:r.balance>0?C.red:C.green,fontWeight:700}}>Rs.{fmt(r.balance)}</span></td>
+            <td style={S.td}><Badge status={r.status}/></td>
+          </tr>)}</tbody>
+        </table>
+      </div>
+    </div>}
+
+    {/* TEACHER COMMISSION */}
+    {rType==="teacher"&&<div>
+      <div style={{display:"flex",gap:8,marginBottom:8,justifyContent:"flex-end"}}>
+        <button onClick={exTeacher} style={{...S.btnGhost,padding:"7px 14px",fontSize:"0.8rem"}}>📥 Excel</button>
+        <button onClick={()=>printReportPDF(`Teacher Commission — ${MONTHS[month]} ${year}`,["Teacher","Students","Fee Received","Commission Rate","Commission Due"],teacherReport.map(r=>[r.name,r.students,"Rs."+fmt(r.received),r.rate,"Rs."+fmt(r.commission)]),[],settings)} style={{...S.btnG,padding:"7px 14px",fontSize:"0.8rem"}}>🖨 Print PDF</button>
+      </div>
+      <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+        <table><thead><tr>{["Teacher","Students","Fee Received","Rate","Commission Due"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{teacherReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td>
+            <td style={S.td}>{r.students}</td>
+            <td style={S.td}>Rs.{fmt(r.received)}</td>
+            <td style={S.td}>{r.rate}</td>
+            <td style={S.td}><span style={{fontWeight:900,color:C.gold,fontSize:"1rem"}}>Rs.{fmt(r.commission)}</span></td>
+          </tr>)}</tbody>
+        </table>
+      </div>
+    </div>}
+
+    {/* STUDENT ATTENDANCE */}
+    {rType==="attendance"&&<div>
+      <div style={{display:"flex",gap:10,marginBottom:10,alignItems:"center",flexWrap:"wrap"}}>
+        <select value={selStudent} onChange={e=>setSelStudent(e.target.value)} style={{...S.select,width:"auto",minWidth:220}}>
+          <option value="">— All Students (Summary) —</option>
+          {active.map(s=><option key={s.id} value={s.id}>{s.name} ({s.class})</option>)}
+        </select>
+        <div style={{display:"flex",gap:6,marginLeft:"auto"}}>
+          {selStudent&&<button onClick={()=>{
+            const s=active.find(x=>x.id===selStudent);
+            if(!s)return;
+            const recs=Object.entries(attendance).filter(([k])=>k.endsWith(`-${s.id}`)).map(([k,v])=>({date:k.replace(`-${s.id}`,""),...v})).sort((a,b)=>b.date.localeCompare(a.date));
+            exportToExcel(recs.map(r=>({Date:r.date,Status:r.status||"—","Sign In":r.in_time||"—","Sign Out":r.out_time||"—",Hours:r.total_hours||"—"})),`${s.name}_Attendance`);
+          }} style={{...S.btnGhost,padding:"7px 14px",fontSize:"0.8rem"}}>📥 Excel</button>}
+          {!selStudent&&<button onClick={exAtt} style={{...S.btnGhost,padding:"7px 14px",fontSize:"0.8rem"}}>📥 Excel All</button>}
+          {selStudent&&<button onClick={()=>{
+            const s=active.find(x=>x.id===selStudent);
+            if(!s)return;
+            const recs=Object.entries(attendance).filter(([k])=>k.endsWith(`-${s.id}`)).map(([k,v])=>({date:k.replace(`-${s.id}`,""),...v})).sort((a,b)=>b.date.localeCompare(a.date));
+            printIndPDF(s,recs,"Student");
+          }} style={{...S.btnG,padding:"7px 14px",fontSize:"0.8rem"}}>🖨 Print PDF</button>}
+          {!selStudent&&<button onClick={()=>printReportPDF("Student Attendance Summary",["Student","Class","Present","Late","Absent","Total","Rate"],attReport.map(r=>[r.name,r.class,r.present,r.late,r.absent,r.total,r.rate+"%"]),[],settings)} style={{...S.btnG,padding:"7px 14px",fontSize:"0.8rem"}}>🖨 Print All PDF</button>}
+        </div>
+      </div>
+
+      {!selStudent&&<div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+        <table><thead><tr>{["Student","Class","Present","Late","Absent","Total","Rate"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{attReport.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td><td style={S.td}>{r.class}</td>
+            <td style={S.td}><span style={{color:C.green,fontWeight:700}}>{r.present}</span></td>
+            <td style={S.td}><span style={{color:C.yellow,fontWeight:700}}>{r.late}</span></td>
+            <td style={S.td}><span style={{color:C.red,fontWeight:700}}>{r.absent}</span></td>
+            <td style={S.td}>{r.total}</td>
+            <td style={S.td}><div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{flex:1,background:C.bg,borderRadius:4,height:6,overflow:"hidden"}}><div style={{width:r.rate+"%",background:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,height:"100%"}}/></div>
+              <span style={{fontWeight:700,color:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,minWidth:34}}>{r.rate}%</span>
+            </div></td>
+          </tr>)}</tbody>
+        </table>
+      </div>}
+
+      {selStudent&&(()=>{
+        const s=active.find(x=>x.id===selStudent);if(!s)return null;
+        const recs=Object.entries(attendance).filter(([k])=>k.endsWith(`-${s.id}`)).map(([k,v])=>({date:k.replace(`-${s.id}`,""),...v})).sort((a,b)=>b.date.localeCompare(a.date));
+        const p=recs.filter(r=>r.status==="present").length,l=recs.filter(r=>r.status==="late").length,a=recs.filter(r=>r.status==="absent").length;
+        return <div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
+            {[["Present",p,C.green,C.greenBg],["Late",l,C.yellow,C.yellowBg],["Absent",a,C.red,C.redBg],["Rate",recs.length>0?Math.round(((p+l)/recs.length)*100)+"%":"—",C.navy,C.blueBg]].map(([lab,val,c,bg])=>
+              <div key={lab} style={{background:bg,borderRadius:10,padding:"12px 16px",borderLeft:`3px solid ${c}`}}>
+                <div style={{fontSize:"0.7rem",color:c,fontWeight:700,textTransform:"uppercase"}}>{lab}</div>
+                <div style={{fontSize:"1.5rem",fontWeight:900,color:c}}>{val}</div>
+              </div>)}
+          </div>
+          <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+            <table><thead><tr>{["Date","Day","Status","Sign In","Sign Out","Hours"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+              <tbody>{recs.map((r,i)=>{const c=r.status==="present"?C.green:r.status==="late"?C.yellow:r.status==="absent"?C.red:C.textL;return<tr key={i} style={{background:r.status==="present"?C.greenBg:r.status==="late"?C.yellowBg:r.status==="absent"?C.redBg:""}}>
+                <td style={S.td}><b>{r.date}</b></td><td style={S.td}>{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(r.date).getDay()]}</td>
+                <td style={S.td}><span style={{fontWeight:700,color:c,textTransform:"capitalize"}}>{r.status||"—"}</span></td>
+                <td style={S.td}>{r.in_time||"—"}</td><td style={S.td}>{r.out_time||"—"}</td><td style={S.td}>{r.total_hours||"—"}</td>
+              </tr>;})}
+              </tbody>
+            </table>
+          </div>
+        </div>;
+      })()}
+    </div>}
+
+    {/* TEACHER ATTENDANCE */}
+    {rType==="teacherAtt"&&<div>
+      <div style={{display:"flex",gap:10,marginBottom:10,alignItems:"center",flexWrap:"wrap"}}>
+        <select value={selTeacher} onChange={e=>setSelTeacher(e.target.value)} style={{...S.select,width:"auto",minWidth:220}}>
+          <option value="">— All Teachers (Summary) —</option>
+          {teachers.filter(t=>t.active).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+        <div style={{display:"flex",gap:6,marginLeft:"auto"}}>
+          {selTeacher&&<button onClick={()=>{
+            const t=teachers.find(x=>x.id===selTeacher);if(!t)return;
+            const recs=Object.entries(teacherAtt).filter(([k])=>k.endsWith(`-${t.id}`)).map(([k,v])=>({date:k.replace(`-${t.id}`,""),...v})).sort((a,b)=>b.date.localeCompare(a.date));
+            exportToExcel(recs.map(r=>({Date:r.date,Status:r.status||"—","Sign In":r.in_time||"—","Sign Out":r.out_time||"—",Hours:r.total_hours||"—"})),`${t.name}_Attendance`);
+          }} style={{...S.btnGhost,padding:"7px 14px",fontSize:"0.8rem"}}>📥 Excel</button>}
+          {!selTeacher&&<button onClick={exTAtt} style={{...S.btnGhost,padding:"7px 14px",fontSize:"0.8rem"}}>📥 Excel All</button>}
+          {selTeacher&&<button onClick={()=>{
+            const t=teachers.find(x=>x.id===selTeacher);if(!t)return;
+            const recs=Object.entries(teacherAtt).filter(([k])=>k.endsWith(`-${t.id}`)).map(([k,v])=>({date:k.replace(`-${t.id}`,""),...v})).sort((a,b)=>b.date.localeCompare(a.date));
+            printIndPDF(t,recs,"Teacher");
+          }} style={{...S.btnG,padding:"7px 14px",fontSize:"0.8rem"}}>🖨 Print PDF</button>}
+          {!selTeacher&&<button onClick={()=>printReportPDF("Teacher Attendance Summary",["Teacher","Present","Late","Absent","Total","Rate"],tAttReport.map(r=>[r.name,r.present,r.late,r.absent,r.total,r.rate+"%"]),[],settings)} style={{...S.btnG,padding:"7px 14px",fontSize:"0.8rem"}}>🖨 Print All PDF</button>}
+        </div>
+      </div>
+      <div style={{...S.card,background:C.yellowBg,borderLeft:`4px solid ${C.yellow}`,padding:"10px 14px",marginBottom:10}}>
+        <span style={{fontWeight:700,color:C.yellow,fontSize:"0.85rem"}}>⚠ Late arrivals highlighted. No salary deduction — record only.</span>
+      </div>
+      {!selTeacher&&<div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+        <table><thead><tr>{["Teacher","Present","Late","Absent","Total","Rate"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{tAttReport.map((r,i)=><tr key={i} style={{background:r.late>0?"#fffde7":""}} onMouseEnter={e=>e.currentTarget.style.background=r.late>0?"#fff9c4":C.bg} onMouseLeave={e=>e.currentTarget.style.background=r.late>0?"#fffde7":""}>
+            <td style={S.td}><span style={{fontWeight:700}}>{r.name}{r.late>0?" ⚠":""}</span></td>
+            <td style={S.td}><span style={{color:C.green,fontWeight:700}}>{r.present}</span></td>
+            <td style={S.td}><span style={{color:C.yellow,fontWeight:700}}>{r.late}</span></td>
+            <td style={S.td}><span style={{color:C.red,fontWeight:700}}>{r.absent}</span></td>
+            <td style={S.td}>{r.total}</td>
+            <td style={S.td}><div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{flex:1,background:C.bg,borderRadius:4,height:6,overflow:"hidden"}}><div style={{width:r.rate+"%",background:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,height:"100%"}}/></div>
+              <span style={{fontWeight:700,color:r.rate>=75?C.green:r.rate>=50?C.gold:C.red,minWidth:34}}>{r.rate}%</span>
+            </div></td>
+          </tr>)}</tbody>
+        </table>
+      </div>}
+      {selTeacher&&(()=>{
+        const t=teachers.find(x=>x.id===selTeacher);if(!t)return null;
+        const recs=Object.entries(teacherAtt).filter(([k])=>k.endsWith(`-${t.id}`)).map(([k,v])=>({date:k.replace(`-${t.id}`,""),...v})).sort((a,b)=>b.date.localeCompare(a.date));
+        const p=recs.filter(r=>r.status==="present").length,l=recs.filter(r=>r.status==="late").length,a=recs.filter(r=>r.status==="absent").length;
+        return <div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
+            {[["Present",p,C.green,C.greenBg],["Late",l,C.yellow,C.yellowBg],["Absent",a,C.red,C.redBg],["Rate",recs.length>0?Math.round(((p+l)/recs.length)*100)+"%":"—",C.navy,C.blueBg]].map(([lab,val,c,bg])=>
+              <div key={lab} style={{background:bg,borderRadius:10,padding:"12px 16px",borderLeft:`3px solid ${c}`}}>
+                <div style={{fontSize:"0.7rem",color:c,fontWeight:700,textTransform:"uppercase"}}>{lab}</div>
+                <div style={{fontSize:"1.5rem",fontWeight:900,color:c}}>{val}</div>
+              </div>)}
+          </div>
+          <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+            <table><thead><tr>{["Date","Day","Status","Sign In","Sign Out","Hours"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+              <tbody>{recs.map((r,i)=>{const c=r.status==="present"?C.green:r.status==="late"?C.yellow:r.status==="absent"?C.red:C.textL;return<tr key={i} style={{background:r.status==="present"?C.greenBg:r.status==="late"?C.yellowBg:r.status==="absent"?C.redBg:""}}>
+                <td style={S.td}><b>{r.date}</b></td><td style={S.td}>{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(r.date).getDay()]}</td>
+                <td style={S.td}><span style={{fontWeight:700,color:c,textTransform:"capitalize"}}>{r.status||"—"}</span></td>
+                <td style={S.td}>{r.in_time||"—"}</td><td style={S.td}>{r.out_time||"—"}</td><td style={S.td}>{r.total_hours||"—"}</td>
+              </tr>;})}
+              </tbody>
+            </table>
+          </div>
+        </div>;
+      })()}
+    </div>}
   </div>;
 }
 
