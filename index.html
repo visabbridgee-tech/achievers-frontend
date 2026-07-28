@@ -24,6 +24,7 @@ const {useState,useEffect}=React;
 const LOGO=window.LOGO_URL;
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS_SHORT=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const CLASSES=["Class 1","Class 2","Class 3","Class 4","Class 5","Class 6","Class 7","Class 8","Class 9","Class 10","O-Level","IGCSE","A-Level","AS-Level","A2-Level","FSc Pre-Med","FSc Pre-Eng","FA"];
 const now=new Date();
 const CY=now.getFullYear();
@@ -42,6 +43,8 @@ const C={
   text:"#1a2740",textMid:"#4a5568",textLight:"#7a8ba0",
   green:"#1a7a42",greenBg:"#e6f4ec",red:"#b02020",redBg:"#fde8e8",
   yellow:"#b07000",yellowBg:"#fff4e0",blue:"#1a4fa0",blueBg:"#e8f0fb",
+  // Short aliases
+  textL:"#7a8ba0",textM:"#4a5568",navyL:"#1e4976",goldL:"#f0b429",
 };
 
 const S={
@@ -504,7 +507,7 @@ function App(){
           {tab==="teachers"&&canAccess("teachers")&&<Teachers teachers={teachers} setTeachers={setTeachers} students={students} teacherAtt={teacherAtt} settings={settings} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
           {tab==="fees"&&canAccess("fees")&&<Fees students={students} setStudents={setStudents} teachers={teachers} settings={settings} setSettings={setSettings} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
           {tab==="challans"&&canAccess("challans")&&<Challans students={students} teachers={teachers} settings={settings} wpLog={wpLog} setWpLog={setWpLog} showToast={showToast}/>}
-          {tab==="schedule"&&canAccess("attendance")&&<Schedule classTimings={classTimings} setClassTimings={setClassTimings} students={students} teachers={teachers} showT={showToast} isSA={currentUser.role==="superadmin"} settings={settings}/> }
+          {tab==="schedule"&&canAccess("attendance")&&<Schedule classTimings={classTimings} setClassTimings={setClassTimings} students={students} teachers={teachers} showToast={showToast} isSA={currentUser.role==="superadmin"} settings={settings}/> }
           {tab==="leaves"&&canAccess("attendance")&&<LeaveManagement students={students} teachers={teachers} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
           {tab==="devices"&&canAccess("settings")&&<DeviceManagement settings={settings} setSettings={setSettings} showToast={showToast}/>}
           {tab==="attendance"&&canAccess("attendance")&&<Attendance students={students} teachers={teachers} attendance={attendance} setAttendance={setAttendance} teacherAtt={teacherAtt} setTeacherAtt={setTeacherAtt} classTimings={classTimings} settings={settings} showToast={showToast} setWpLog={setWpLog} isSA={currentUser.role==="superadmin"}/>}
@@ -522,7 +525,7 @@ function App(){
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 
-function Students({students,setStudents,teachers,settings,showToast,isSA}){
+function Students({students=[],setStudents,teachers=[],settings={},showToast,isSA=false}){
   const[search,setSearch]=useState("");
   const[fc,setFc]=useState("All");
   const[modal,setModal]=useState(null);
@@ -630,7 +633,7 @@ function Students({students,setStudents,teachers,settings,showToast,isSA}){
 }
 
 // ── TEACHERS ──────────────────────────────────────────────────────────────────
-function Teachers({teachers,setTeachers,students,teacherAtt,settings,showToast,isSA}){
+function Teachers({teachers=[],setTeachers,students=[],teacherAtt={},settings={},showToast,isSA=false}){
   const[modal,setModal]=useState(null);
   const[form,setForm]=useState(null);
   const[slipModal,setSlipModal]=useState(null);
@@ -714,7 +717,7 @@ function Teachers({teachers,setTeachers,students,teacherAtt,settings,showToast,i
 }
 
 // ── FEES ──────────────────────────────────────────────────────────────────────
-function Fees({students,setStudents,teachers,settings,setSettings,showToast,isSA}){
+function Fees({students=[],setStudents,teachers=[],settings={},setSettings,showToast,isSA=false}){
   const[selId,setSelId]=useState("");
   const[modal,setModal]=useState(null);
   const[pf,setPf]=useState({amount:"",discount:"",feeKey:""});
@@ -790,7 +793,7 @@ function Fees({students,setStudents,teachers,settings,setSettings,showToast,isSA
 }
 
 // ── CHALLANS ──────────────────────────────────────────────────────────────────
-function Challans({students,teachers,settings,wpLog,setWpLog,showToast}){
+function Challans({students=[],teachers=[],settings={},wpLog=[],setWpLog,showToast}){
   const[sending,setSending]=useState(false);
   const active=students.filter(s=>s.active);
 
@@ -836,7 +839,7 @@ function Challans({students,teachers,settings,wpLog,setWpLog,showToast}){
 }
 
 // ── ATTENDANCE ────────────────────────────────────────────────────────────────
-function Attendance({students,teachers,attendance,setAttendance,teacherAtt,setTeacherAtt,classTimings,settings,showToast,setWpLog,isSA}){
+function Attendance({students=[],teachers=[],attendance={},setAttendance,teacherAtt={},setTeacherAtt,classTimings=[],settings={},showToast,setWpLog,isSA=false}){
   const[viewDate,setViewDate]=useState(new Date().toISOString().split("T")[0]);
   const[scanning,setScanning]=useState(false);
   const[activeTab,setActiveTab]=useState("students");
@@ -1253,7 +1256,7 @@ function printAttendance(list, attendance, date, type, settings) {
 
 
 // SCHEDULE COMPONENT
-function Schedule({classTimings,setClassTimings,students,teachers,showT,isSA,settings}){
+function Schedule({classTimings=[],setClassTimings,students=[],teachers=[],showToast,isSA=false,settings={}}){
   const DAYS_ALL=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   const[selDay,setSelDay]=useState(DAYS_ALL[new Date().getDay()]);
   const[modal,setModal]=useState(null);
@@ -1271,10 +1274,10 @@ function Schedule({classTimings,setClassTimings,students,teachers,showT,isSA,set
     setModal("edit");
   }
   function save(){
-    if(!form.class||!form.startTime){showT("Fill required fields","error");return;}
+    if(!form.class||!form.startTime){showToast("Fill required fields","error");return;}
     if(modal==="add") setClassTimings(p=>[...p,{...form,id:gid()}]);
     else setClassTimings(p=>p.map(t=>t.id===form.id?form:t));
-    showT("Timing saved!");setModal(null);setForm(null);
+    showToast("Timing saved!");setModal(null);setForm(null);
   }
 
   function toggleTeacher(id){
@@ -1288,7 +1291,7 @@ function Schedule({classTimings,setClassTimings,students,teachers,showT,isSA,set
     // Auto-assign all students of the selected class
     const classStudents=students.filter(s=>s.active&&s.class===form.class).map(s=>s.id);
     setForm(f=>({...f,studentIds:classStudents}));
-    showT(`${classStudents.length} students from ${form.class} assigned!`);
+    showToast(`${classStudents.length} students from ${form.class} assigned!`);
   }
 
   function printSchedule(){
@@ -1386,7 +1389,7 @@ function Schedule({classTimings,setClassTimings,students,teachers,showT,isSA,set
               </td>
               <td style={S.td}>{isSA&&<div style={{display:"flex",gap:5}}>
                 <button onClick={()=>openEdit(t)} style={{...S.btnGhost,padding:"5px 10px",fontSize:"0.75rem"}}>Edit</button>
-                <button onClick={()=>{setClassTimings(p=>p.filter(x=>x.id!==t.id));showT("Removed");}} style={{...S.btnDanger,padding:"5px 10px",fontSize:"0.75rem"}}>Remove</button>
+                <button onClick={()=>{setClassTimings(p=>p.filter(x=>x.id!==t.id));showToast("Removed");}} style={{...S.btnDanger,padding:"5px 10px",fontSize:"0.75rem"}}>Remove</button>
               </div>}</td>
             </tr>;
           })}
@@ -1469,8 +1472,8 @@ function exportTableToExcel(headers, rows, filename){
 }
 
 // ── SVG CHART HELPERS ─────────────────────────────────────────────────────────
-function BarChart({data,width=400,height=180,color=C.navy}){
-  if(!data||!data.length)return null;
+function BarChart({data=[],width=400,height=180,color=C.navy}){
+  if(!data||!data.length)return <div style={{color:C.textLight,textAlign:"center",padding:20}}>No data yet</div>;
   const max=Math.max(...data.map(d=>d.value),1);
   const barW=Math.floor((width-40)/data.length)-4;
   return <svg width={width} height={height} style={{overflow:"visible"}}>
@@ -1518,12 +1521,12 @@ function PieChart({data,size=140}){
 // ══════════════════════════════════════════════════════════════════════════════
 // ENHANCED DASHBOARD v6
 // ══════════════════════════════════════════════════════════════════════════════
-function Dashboard({students,teachers,att,settings,wpLog,timings}){
+function Dashboard({students=[],teachers=[],attendance={},settings={},wpLog=[],classTimings=[]}){ 
   const active=students.filter(s=>s.active);
   const todayKey=new Date().toISOString().split("T")[0];
   const todayDay=DAYS[new Date().getDay()];
-  const todayTim=timings.filter(t=>t.day===todayDay);
-  const todayAtt=Object.entries(att).filter(([k])=>k.startsWith(todayKey));
+  const todayTim=classTimings.filter(t=>t.day===todayDay);
+  const todayAtt=Object.entries(attendance).filter(([k])=>k.startsWith(todayKey));
   const pT=todayAtt.filter(([,v])=>v.status==="present").length;
   const aT=todayAtt.filter(([,v])=>v.status==="absent").length;
   const lT=todayAtt.filter(([,v])=>v.status==="late").length;
@@ -1553,9 +1556,9 @@ function Dashboard({students,teachers,att,settings,wpLog,timings}){
   ];
 
   // Class-wise attendance
-  const classAtt=CLASSES.filter(cls=>active.some(s=>s.class===cls)).map(cls=>{
+  const classAtt=(CLASSES||[]).filter(cls=>active.some(s=>s.class===cls)).map(cls=>{
     const clsStudents=active.filter(s=>s.class===cls);
-    const clsPres=clsStudents.filter(s=>att[`${todayKey}-${s.id}`]?.status==="present"||att[`${todayKey}-${s.id}`]?.status==="late").length;
+    const clsPres=clsStudents.filter(s=>attendance[`${todayKey}-${s.id}`]?.status==="present"||attendance[`${todayKey}-${s.id}`]?.status==="late").length;
     return{cls,total:clsStudents.length,present:clsPres};
   });
 
@@ -1632,7 +1635,7 @@ function Dashboard({students,teachers,att,settings,wpLog,timings}){
           :<div style={{display:"flex",flexDirection:"column",gap:6}}>
             {todayTim.sort((a,b)=>a.startTime.localeCompare(b.startTime)).map(ct=>{
               const cnt=students.filter(s=>s.active&&s.class===ct.class).length;
-              const pres=students.filter(s=>s.active&&s.class===ct.class&&att[`${todayKey}-${s.id}`]?.status==="present").length;
+              const pres=students.filter(s=>s.active&&s.class===ct.class&&attendance[`${todayKey}-${s.id}`]?.status==="present").length;
               return <div key={ct.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.bg,borderRadius:8,padding:"8px 12px",borderLeft:`3px solid ${C.gold}`}}>
                 <div><div style={{fontWeight:700,fontSize:"0.85rem"}}>{ct.class}</div><div style={{fontSize:"0.7rem",color:C.textM}}>{ct.startTime}–{ct.endTime} · {ct.shift}</div></div>
                 <div style={{textAlign:"right"}}><div style={{fontWeight:700,fontSize:"0.85rem",color:C.green}}>{pres}/{cnt}</div><div style={{fontSize:"0.7rem",color:C.textL}}>present</div></div>
@@ -1689,7 +1692,7 @@ function Dashboard({students,teachers,att,settings,wpLog,timings}){
 // ══════════════════════════════════════════════════════════════════════════════
 // LEAVE MANAGEMENT MODULE
 // ══════════════════════════════════════════════════════════════════════════════
-function LeaveManagement({students,teachers,showT,isSA}){
+function LeaveManagement({students=[],teachers=[],showToast,isSA=false}){
   const[leaves,setLeaves]=useState(()=>loadLS("aa_leaves",[]));
   const[modal,setModal]=useState(null);
   const[form,setForm]=useState({type:"student",personId:"",fromDate:new Date().toISOString().split("T")[0],toDate:new Date().toISOString().split("T")[0],reason:"",status:"pending"});
@@ -1698,16 +1701,16 @@ function LeaveManagement({students,teachers,showT,isSA}){
   useEffect(()=>saveLS("aa_leaves",leaves),[leaves]);
 
   function apply(){
-    if(!form.personId||!form.reason.trim()){showT("Fill all fields","error");return;}
+    if(!form.personId||!form.reason.trim()){showToast("Fill all fields","error");return;}
     const newLeave={...form,id:gid(),appliedDate:new Date().toISOString().split("T")[0],appliedTime:new Date().toLocaleTimeString()};
     setLeaves(p=>[newLeave,...p]);
-    showT("Leave application submitted!");
+    showToast("Leave application submitted!");
     setModal(null);
   }
 
   function updateStatus(id,status){
     setLeaves(p=>p.map(l=>l.id===id?{...l,status,updatedDate:new Date().toISOString().split("T")[0]}:l));
-    showT("Leave status updated!");
+    showToast("Leave status updated!");
   }
 
   function exportLeaves(){
@@ -1793,7 +1796,7 @@ function LeaveManagement({students,teachers,showT,isSA}){
 // ══════════════════════════════════════════════════════════════════════════════
 // DEVICE MANAGEMENT MODULE
 // ══════════════════════════════════════════════════════════════════════════════
-function DeviceManagement({settings,setSettings,showT}){
+function DeviceManagement({settings={},setSettings,showToast}){
   const[devices,setDevices]=useState(()=>loadLS("aa_devices",[{id:gid(),name:"Main Entrance",ip:"192.168.1.201",port:"4370",type:"ZKTeco K50",status:"active",location:"Main Gate",lastSync:"Never"}]));
   const[modal,setModal]=useState(null);
   const[form,setForm]=useState(null);
@@ -1805,15 +1808,15 @@ function DeviceManagement({settings,setSettings,showT}){
     setTesting(device.id);
     setTimeout(()=>{
       setTesting(null);
-      showT(`Device ${device.name} — Connection test completed`);
+      showToast(`Device ${device.name} — Connection test completed`);
     },2000);
   }
 
   function save(){
-    if(!form.name||!form.ip){showT("Name and IP required","error");return;}
+    if(!form.name||!form.ip){showToast("Name and IP required","error");return;}
     if(modal==="add")setDevices(p=>[...p,{...form,id:gid()}]);
     else setDevices(p=>p.map(d=>d.id===form.id?form:d));
-    showT("Device saved!");setModal(null);setForm(null);
+    showToast("Device saved!");setModal(null);setForm(null);
   }
 
   return <div>
@@ -1841,7 +1844,7 @@ function DeviceManagement({settings,setSettings,showT}){
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>testDevice(d)} disabled={testing===d.id} style={{...S.btnGreen,flex:1,padding:"7px",fontSize:"0.78rem",opacity:testing===d.id?0.7:1}}>{testing===d.id?"Testing...":"Test Connection"}</button>
           <button onClick={()=>{setForm({...d});setModal("edit");}} style={{...S.btnGhost,padding:"7px 12px",fontSize:"0.78rem"}}>Edit</button>
-          <button onClick={()=>{setDevices(p=>p.filter(x=>x.id!==d.id));showT("Removed");}} style={{...S.btnDanger,padding:"7px 12px",fontSize:"0.78rem"}}>×</button>
+          <button onClick={()=>{setDevices(p=>p.filter(x=>x.id!==d.id));showToast("Removed");}} style={{...S.btnDanger,padding:"7px 12px",fontSize:"0.78rem"}}>×</button>
         </div>
       </div>)}
     </div>
@@ -1876,7 +1879,7 @@ function DeviceManagement({settings,setSettings,showT}){
 // ══════════════════════════════════════════════════════════════════════════════
 // ENHANCED REPORTS v6 - with Excel + PDF export
 // ══════════════════════════════════════════════════════════════════════════════
-function Reports({students,teachers,attendance,teacherAtt,settings}){
+function Reports({students=[],teachers=[],attendance={},teacherAtt={},settings={}}){
   const[rType,setRType]=useState("fee");
   const[month,setMonth]=useState(CM);
   const[year,setYear]=useState(CY);
