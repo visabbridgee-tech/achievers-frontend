@@ -29,6 +29,44 @@ const CLASSES=["Class 1","Class 2","Class 3","Class 4","Class 5","Class 6","Clas
 const now=new Date();
 const CY=now.getFullYear();
 const CM=now.getMonth();
+
+// ══════════════════════════════════════════════════════════════════
+// PHASE 2/3 — API HELPER for new server-backed modules
+// (Sessions/Batches/Classes/Subjects/Assignments/Timetable/
+//  Previous Arrears/Challan History/Period Attendance/Roles)
+// Existing tabs (Students/Teachers/Fees/Attendance/Challans/Schedule/
+// Reports/Users/Settings) are UNCHANGED and keep using localStorage.
+// ══════════════════════════════════════════════════════════════════
+function getApiBase(){ return loadLS("aa_api_base","") || ""; }
+async function apiGet(path){
+  const base=getApiBase();
+  if(!base) throw new Error("Backend URL not set — go to Settings → Backend Connection");
+  const res=await fetch(base+path);
+  if(!res.ok){ const t=await res.text().catch(()=>""); throw new Error("API error "+res.status+": "+t); }
+  return res.json();
+}
+async function apiPost(path,body){
+  const base=getApiBase();
+  if(!base) throw new Error("Backend URL not set — go to Settings → Backend Connection");
+  const res=await fetch(base+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!res.ok){ const t=await res.text().catch(()=>""); throw new Error("API error "+res.status+": "+t); }
+  return res.json();
+}
+async function apiPut(path,body){
+  const base=getApiBase();
+  if(!base) throw new Error("Backend URL not set — go to Settings → Backend Connection");
+  const res=await fetch(base+path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!res.ok){ const t=await res.text().catch(()=>""); throw new Error("API error "+res.status+": "+t); }
+  return res.json();
+}
+async function apiDelete(path){
+  const base=getApiBase();
+  if(!base) throw new Error("Backend URL not set — go to Settings → Backend Connection");
+  const res=await fetch(base+path,{method:"DELETE"});
+  if(!res.ok){ const t=await res.text().catch(()=>""); throw new Error("API error "+res.status+": "+t); }
+  return res.json();
+}
+
 const CD=now.getDate();
 
 function gid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
@@ -120,8 +158,11 @@ const NAV=[
   {id:"dashboard",label:"Dashboard",perm:null},
   {id:"students",label:"Students",perm:"students"},
   {id:"teachers",label:"Teachers",perm:"teachers"},
+  {id:"academic",label:"🏫 Academic Setup",perm:"settings"},
+  {id:"assignments",label:"🔗 Assignments",perm:"settings"},
   {id:"fees",label:"Fees & Payments",perm:"fees"},
   {id:"challans",label:"Challans",perm:"challans"},
+  {id:"arrears",label:"📜 Arrears & Challan History",perm:"fees"},
   {id:"attendance",label:"📋 Attendance",perm:"attendance"},{id:"schedule",label:"📅 Timetable",perm:"attendance"},{id:"leaves",label:"🏖 Leave Management",perm:"attendance"},{id:"devices",label:"🔌 Devices",perm:"settings"},
   {id:"reports",label:"Reports",perm:"reports"},
   {id:"users",label:"User Management",perm:"users"},
@@ -252,6 +293,25 @@ function printChallan(student, fee, feeKey, settings, teachers) {
 
 
 // ── TEACHER SALARY SLIP PRINT ─────────────────────────────────────────────────
+
+// ── Challan History Logger (additive — does not change printChallan) ──
+function logChallanPrint(student, fee, feeKey, generatedType){
+  try{
+    const[y,m]=feeKey.split("-").map(Number);
+    const net=fee.totalFee-(fee.discount||0);
+    const arrears=fee.arrears||0;
+    const log=loadLS("aa_challan_log",[]);
+    log.unshift({
+      id:gid(), studentId:student.id, studentName:student.name, class:student.class,
+      year:y, month:m, challanNo:fee.challanNo||0,
+      totalFee:fee.totalFee, discount:fee.discount||0, netFee:net,
+      arrears, totalPayable:net+arrears+(student.regFee||0),
+      generatedType:generatedType||"manual", generatedAt:new Date().toISOString(),
+      status:fee.status||"unpaid"
+    });
+    saveLS("aa_challan_log",log.slice(0,2000)); // cap history size
+  }catch(e){ /* non-critical, never break printing */ }
+}
 
 function printSalarySlip(teacher, month, year, students, teacherAtt, settings) {
   const assigned = students.filter(s => s.active && s.subjects.some(x => x.teacherId === teacher.id));
@@ -512,8 +572,11 @@ function App(){
           {tab==="dashboard"&&<Dashboard students={students} teachers={teachers} attendance={attendance} settings={settings} wpLog={wpLog} classTimings={classTimings}/>}
           {tab==="students"&&canAccess("students")&&<Students students={students} setStudents={setStudents} teachers={teachers} settings={settings} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
           {tab==="teachers"&&canAccess("teachers")&&<Teachers teachers={teachers} setTeachers={setTeachers} students={students} teacherAtt={teacherAtt} settings={settings} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
+          {tab==="academic"&&canAccess("settings")&&<AcademicSetup showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
+          {tab==="assignments"&&canAccess("settings")&&<Assignments students={students} teachers={teachers} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
           {tab==="fees"&&canAccess("fees")&&<Fees students={students} setStudents={setStudents} teachers={teachers} settings={settings} setSettings={setSettings} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
           {tab==="challans"&&canAccess("challans")&&<Challans students={students} teachers={teachers} settings={settings} wpLog={wpLog} setWpLog={setWpLog} showToast={showToast}/>}
+          {tab==="arrears"&&canAccess("fees")&&<ArrearsAndChallanHistory students={students} settings={settings} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
           {tab==="schedule"&&canAccess("attendance")&&<Schedule classTimings={classTimings} setClassTimings={setClassTimings} students={students} teachers={teachers} showToast={showToast} isSA={currentUser.role==="superadmin"} settings={settings}/> }
           {tab==="leaves"&&canAccess("attendance")&&<LeaveManagement students={students} teachers={teachers} showToast={showToast} isSA={currentUser.role==="superadmin"}/>}
           {tab==="devices"&&canAccess("settings")&&<DeviceManagement settings={settings} setSettings={setSettings} showToast={showToast}/>}
@@ -779,7 +842,7 @@ function Fees({students=[],setStudents,teachers=[],settings={},setSettings,showT
                 <td style={S.td}><Badge status={fee.status}/></td>
                 <td style={S.td}><div style={{display:"flex",gap:5}}>
                   {(fee.status!=="paid"||isSA)&&<button onClick={()=>{setPf({amount:String(bal),discount:String(fee.discount||0),arrears:String(fee.arrears||0),feeKey:key});setModal("pay");}} style={{...S.btnGreen,padding:"5px 9px",fontSize:"0.75rem"}}>{isSA&&fee.status==="paid"?"Edit":"Pay"}</button>}
-                  <button onClick={()=>printChallan(sel,fee,key,settings,teachers)} style={{...S.btnG,padding:"5px 9px",fontSize:"0.75rem"}}>Challan</button>
+                  <button onClick={()=>{logChallanPrint(sel,fee,key,"manual");printChallan(sel,fee,key,settings,teachers);}} style={{...S.btnG,padding:"5px 9px",fontSize:"0.75rem"}}>Challan</button>
                 </div></td>
               </tr>;
             })}</tbody>
@@ -837,7 +900,7 @@ function Challans({students=[],teachers=[],settings={},wpLog=[],setWpLog,showToa
             <td style={S.td}>{s.class}</td>
             <td style={S.td}>Rs. {fmt(fee?.totalFee||0)}</td>
             <td style={S.td}>{fee?<Badge status={fee.status}/>:"—"}</td>
-            <td style={S.td}>{fee&&<button onClick={()=>printChallan(s,fee,key,settings,teachers)} style={{...S.btnG,padding:"6px 12px",fontSize:"0.78rem"}}>Print Challan</button>}</td>
+            <td style={S.td}>{fee&&<button onClick={()=>{logChallanPrint(s,fee,key,"manual");printChallan(s,fee,key,settings,teachers);}} style={{...S.btnG,padding:"6px 12px",fontSize:"0.78rem"}}>Print Challan</button>}</td>
           </tr>;
         })}</tbody>
       </table>
@@ -1068,7 +1131,7 @@ function Users({users,setUsers,currentUser,showToast}){
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
 function Settings({settings,setSettings,classTimings,setClassTimings,showToast}){
-  const[form,setForm]=useState({...settings});
+  const[form,setForm]=useState({...settings,apiBase:loadLS("aa_api_base","")});
   const[tf,setTf]=useState(null);
   const[modal,setModal]=useState(null);
 
@@ -1130,6 +1193,15 @@ function Settings({settings,setSettings,classTimings,setClassTimings,showToast})
           </tr>)}</tbody>
         </table>
       </div>
+    </div>
+    <div style={S.card}><ST title="Backend Connection (Phase 2 Modules)"/>
+      <Field label="Railway Backend URL">
+        <input value={form.apiBase||""} onChange={e=>setForm({...form,apiBase:e.target.value})} style={{...S.input,fontFamily:"monospace"}} placeholder="https://your-backend.up.railway.app"/>
+      </Field>
+      <div style={{background:C.bg,borderRadius:8,padding:"10px 14px",fontSize:"0.8rem",color:C.textMid}}>
+        Ye URL <b>Academic Setup</b>, <b>Assignments</b>, <b>Timetable (Period-wise)</b>, <b>Previous Arrears</b> aur <b>Challan History</b> ke liye use hoti hai. Railway → project → Settings → Domain se copy karo. Trailing slash "/" mat lagana.
+      </div>
+      <button onClick={()=>{saveLS("aa_api_base",form.apiBase||"");showToast("Backend URL saved!");}} style={{...S.btnGold,marginTop:10,padding:"9px 18px",fontSize:"0.85rem"}}>Save Backend URL</button>
     </div>
     <button onClick={save} style={{...S.btnPrimary,padding:"13px 32px",fontSize:"0.95rem"}}>Save All Settings</button>
     {(modal==="addT"||modal==="editT")&&tf&&<Modal title={modal==="addT"?"Add Class Timing":"Edit Timing"} onClose={()=>{setModal(null);setTf(null);}} width={420}>
@@ -1949,7 +2021,7 @@ function Reports({students=[],teachers=[],attendance={},teacherAtt={},settings={
     win.document.close();
   }
 
-  const TABS=[["fee","💰 Fee Collection"],["teacher","👨‍🏫 Commission"],["attendance","📋 Student Att."],["teacherAtt","🕐 Teacher Att."]];
+  const TABS=[["fee","💰 Fee Collection"],["teacher","👨‍🏫 Commission"],["attendance","📋 Student Att."],["teacherAtt","🕐 Teacher Att."],["period","🏫 Class/Period Reports"]];
 
   return <div>
     <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
@@ -2147,6 +2219,8 @@ function Reports({students=[],teachers=[],attendance={},teacherAtt={},settings={
         </div>;
       })()}
     </div>}
+
+    {rType==="period"&&<PeriodReportsPanel settings={settings}/>}
   </div>;
 }
 
@@ -2180,6 +2254,715 @@ class ErrorBoundary extends React.Component{
     }
     return this.props.children;
   }
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// ACADEMIC SETUP — Super Admin manages Sessions, Batches, Classes,
+// Subjects — all dynamic, no code editing needed ever again.
+// Talks to the new backend API (Phase 2). Fully additive — does not
+// touch existing Students/Teachers/Fees/Attendance code or data.
+// ══════════════════════════════════════════════════════════════════
+function GenericCrudPanel({title, apiPath, fields, showToast, isSA, extraCols}){
+  const[items,setItems]=useState([]);
+  const[loading,setLoading]=useState(false);
+  const[err,setErr]=useState("");
+  const[modal,setModal]=useState(null);
+  const[form,setForm]=useState(null);
+
+  async function load(){
+    setLoading(true); setErr("");
+    try{
+      const data=await apiGet(apiPath);
+      setItems(Array.isArray(data)?data:[]);
+    }catch(e){ setErr(e.message); }
+    setLoading(false);
+  }
+  useEffect(()=>{ load(); },[]);
+
+  function openAdd(){
+    const blank={}; fields.forEach(f=>blank[f.key]=f.default!==undefined?f.default:"");
+    setForm(blank); setModal("add");
+  }
+  function openEdit(item){ setForm({...item}); setModal("edit"); }
+
+  async function save(){
+    try{
+      if(modal==="add"){ await apiPost(apiPath, form); showToast(title+" added!"); }
+      else{ await apiPut(apiPath+"/"+form.id, form); showToast(title+" updated!"); }
+      setModal(null); setForm(null); load();
+    }catch(e){ showToast(e.message,"error"); }
+  }
+  async function remove(id){
+    try{ await apiDelete(apiPath+"/"+id); showToast("Removed!"); load(); }
+    catch(e){ showToast(e.message,"error"); }
+  }
+
+  return <div style={{marginBottom:20}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+      <div style={{fontWeight:800,color:C.navy,fontSize:"0.95rem"}}>{title}</div>
+      {isSA&&<button onClick={openAdd} style={{...S.btnPrimary,padding:"7px 14px",fontSize:"0.8rem"}}>+ Add {title}</button>}
+    </div>
+    {err&&<div style={{background:C.redBg,color:C.red,padding:"8px 12px",borderRadius:8,fontSize:"0.8rem",marginBottom:10}}>{err}
+      {err.includes("Backend URL")&&<div style={{marginTop:4}}>Settings → Backend Connection mein Railway URL daalo.</div>}
+    </div>}
+    {loading&&<div style={{color:C.textLight,fontSize:"0.85rem",padding:10}}>Loading...</div>}
+    {!loading&&!err&&<div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <table><thead><tr>{[...fields.map(f=>f.label),...(extraCols||[]),"Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <tbody>
+          {items.length===0&&<tr><td colSpan={fields.length+(extraCols?.length||0)+1} style={{...S.td,textAlign:"center",padding:24,color:C.textLight}}>No {title.toLowerCase()} yet</td></tr>}
+          {items.map(it=><tr key={it.id} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            {fields.map(f=><td key={f.key} style={S.td}>{it[f.key]!==undefined&&it[f.key]!==null?String(it[f.key]):"—"}</td>)}
+            {(extraCols||[]).map(c=><td key={c} style={S.td}>—</td>)}
+            <td style={S.td}>{isSA&&<div style={{display:"flex",gap:5}}>
+              <button onClick={()=>openEdit(it)} style={{...S.btnGhost,padding:"5px 10px",fontSize:"0.75rem"}}>Edit</button>
+              <button onClick={()=>remove(it.id)} style={{...S.btnDanger,padding:"5px 10px",fontSize:"0.75rem"}}>Remove</button>
+            </div>}</td>
+          </tr>)}
+        </tbody>
+      </table>
+    </div>}
+
+    {(modal==="add"||modal==="edit")&&form&&<Modal title={(modal==="add"?"Add ":"Edit ")+title} onClose={()=>{setModal(null);setForm(null);}} width={460}>
+      {fields.map(f=><Field key={f.key} label={f.label}>
+        {f.type==="select"
+          ?<select value={form[f.key]||""} onChange={e=>setForm({...form,[f.key]:e.target.value})} style={S.select}>
+            <option value="">— Select —</option>
+            {(f.options||[]).map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          :<input type={f.type||"text"} value={form[f.key]||""} onChange={e=>setForm({...form,[f.key]:e.target.value})} style={S.input}/>}
+      </Field>)}
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={save} style={{...S.btnPrimary,flex:1}}>Save</button>
+        <button onClick={()=>{setModal(null);setForm(null);}} style={{...S.btnGhost,flex:1}}>Cancel</button>
+      </div>
+    </Modal>}
+  </div>;
+}
+
+function AcademicSetup({showToast, isSA}){
+  const[subTab,setSubTab]=useState("sessions");
+  const[sessions,setSessions]=useState([]);
+
+  useEffect(()=>{
+    apiGet("/api/sessions").then(d=>setSessions(Array.isArray(d)?d:[])).catch(()=>{});
+  },[subTab]);
+
+  const sessionOptions=sessions.map(s=>({value:s.id,label:s.name}));
+
+  return <div>
+    <div style={{display:"flex",background:C.bg,borderRadius:9,border:`1px solid ${C.border}`,overflow:"hidden",marginBottom:16,flexWrap:"wrap"}}>
+      {[["sessions","Sessions"],["batches","Batches"],["classes","Classes"],["subjects","Subjects"],["periods","Timetable Periods"]].map(([id,label])=>
+        <button key={id} onClick={()=>setSubTab(id)} style={{padding:"9px 16px",background:subTab===id?C.navy:"transparent",color:subTab===id?C.white:C.text,border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.85rem",fontFamily:"inherit"}}>{label}</button>)}
+    </div>
+
+    {subTab==="sessions"&&<GenericCrudPanel title="Session" apiPath="/api/sessions" showToast={showToast} isSA={isSA}
+      fields={[{key:"name",label:"Session Name (e.g. 2026-2027)"},{key:"start_date",label:"Start Date",type:"date"},{key:"end_date",label:"End Date",type:"date"}]}/>}
+
+    {subTab==="batches"&&<GenericCrudPanel title="Batch" apiPath="/api/batches" showToast={showToast} isSA={isSA}
+      fields={[{key:"name",label:"Batch Name (e.g. Morning)"},{key:"session_id",label:"Session",type:"select",options:sessionOptions}]}/>}
+
+    {subTab==="classes"&&<GenericCrudPanel title="Class" apiPath="/api/classes-master" showToast={showToast} isSA={isSA}
+      fields={[{key:"name",label:"Class Name (e.g. Class 9, O-Level)"},{key:"session_id",label:"Session",type:"select",options:sessionOptions}]}/>}
+
+    {subTab==="subjects"&&<GenericCrudPanel title="Subject" apiPath="/api/subjects-master" showToast={showToast} isSA={isSA}
+      fields={[{key:"name",label:"Subject Name"},{key:"code",label:"Subject Code (optional)"}]}/>}
+
+    {subTab==="periods"&&<TimetablePeriodsPanel showToast={showToast} isSA={isSA}/>}
+
+    <div style={{...S.card,background:C.blueBg,borderLeft:`4px solid ${C.blue}`,marginTop:10}}>
+      <div style={{fontWeight:700,color:C.blue,fontSize:"0.85rem",marginBottom:4}}>ℹ️ Backend Connection Zaroori Hai</div>
+      <div style={{fontSize:"0.8rem",color:C.textMid}}>Ye module Railway backend se connect hota hai. Agar upar error dikhe to <b>Settings → Backend Connection</b> mein Railway URL set karo.</div>
+    </div>
+  </div>;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ASSIGNMENTS — Student↔Class, Student↔Subject, Teacher↔Class+Subject
+// ══════════════════════════════════════════════════════════════════
+function Assignments({students, teachers, showToast, isSA}){
+  const[subTab,setSubTab]=useState("studentClass");
+  const[classes,setClasses]=useState([]);
+  const[subjects,setSubjects]=useState([]);
+  const[batches,setBatches]=useState([]);
+  const[studentClassMaps,setStudentClassMaps]=useState([]);
+  const[studentSubjectMaps,setStudentSubjectMaps]=useState([]);
+  const[teacherMaps,setTeacherMaps]=useState([]);
+  const[err,setErr]=useState("");
+
+  const[selStudent,setSelStudent]=useState("");
+  const[selClass,setSelClass]=useState("");
+  const[selBatch,setSelBatch]=useState("");
+  const[selSubject,setSelSubject]=useState("");
+  const[selTeacher,setSelTeacher]=useState("");
+
+  async function loadAll(){
+    setErr("");
+    try{
+      const[c,s,b]=await Promise.all([apiGet("/api/classes-master"),apiGet("/api/subjects-master"),apiGet("/api/batches")]);
+      setClasses(Array.isArray(c)?c:[]); setSubjects(Array.isArray(s)?s:[]); setBatches(Array.isArray(b)?b:[]);
+    }catch(e){ setErr(e.message); }
+  }
+  async function loadMaps(){
+    try{
+      if(subTab==="studentClass"){ const d=await apiGet("/api/student-class-map"); setStudentClassMaps(Array.isArray(d)?d:[]); }
+      if(subTab==="studentSubject"){ const d=await apiGet("/api/student-subject-map"); setStudentSubjectMaps(Array.isArray(d)?d:[]); }
+      if(subTab==="teacher"){ const d=await apiGet("/api/teacher-assignments"); setTeacherMaps(Array.isArray(d)?d:[]); }
+    }catch(e){ /* silent, generic err already shown */ }
+  }
+  useEffect(()=>{ loadAll(); },[]);
+  useEffect(()=>{ loadMaps(); },[subTab]);
+
+  async function assignStudentClass(){
+    if(!selStudent||!selClass){ showToast("Select student & class","error"); return; }
+    try{
+      await apiPost("/api/student-class-map", { student_id:selStudent, class_id:selClass, batch_id:selBatch||null });
+      showToast("Assigned!"); setSelStudent("");setSelClass("");setSelBatch(""); loadMaps();
+    }catch(e){ showToast(e.message,"error"); }
+  }
+  async function assignStudentSubject(){
+    if(!selStudent||!selSubject){ showToast("Select student & subject","error"); return; }
+    try{
+      await apiPost("/api/student-subject-map", { student_id:selStudent, subject_id:selSubject, class_id:selClass||null });
+      showToast("Assigned!"); setSelStudent("");setSelSubject(""); loadMaps();
+    }catch(e){ showToast(e.message,"error"); }
+  }
+  async function assignTeacher(){
+    if(!selTeacher||!selClass){ showToast("Select teacher & class","error"); return; }
+    try{
+      await apiPost("/api/teacher-assignments", { teacher_id:selTeacher, class_id:selClass, subject_id:selSubject||null });
+      showToast("Assigned!"); setSelTeacher("");setSelClass("");setSelSubject(""); loadMaps();
+    }catch(e){ showToast(e.message,"error"); }
+  }
+  async function removeMap(path,id){
+    try{ await apiDelete(path+"/"+id); showToast("Removed"); loadMaps(); }
+    catch(e){ showToast(e.message,"error"); }
+  }
+
+  return <div>
+    <div style={{display:"flex",background:C.bg,borderRadius:9,border:`1px solid ${C.border}`,overflow:"hidden",marginBottom:16,flexWrap:"wrap"}}>
+      {[["studentClass","Student ↔ Class"],["studentSubject","Student ↔ Subject"],["teacher","Teacher ↔ Class/Subject"]].map(([id,label])=>
+        <button key={id} onClick={()=>setSubTab(id)} style={{padding:"9px 14px",background:subTab===id?C.navy:"transparent",color:subTab===id?C.white:C.text,border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.82rem",fontFamily:"inherit"}}>{label}</button>)}
+    </div>
+
+    {err&&<div style={{background:C.redBg,color:C.red,padding:"10px 14px",borderRadius:8,fontSize:"0.82rem",marginBottom:14}}>{err}
+      <div style={{marginTop:4}}>Settings → Backend Connection mein Railway URL set karo, phir naye Classes/Subjects Academic Setup mein add karo.</div>
+    </div>}
+
+    {!err&&subTab==="studentClass"&&<div>
+      <div style={S.card}>
+        <ST title="Naya Assignment"/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
+          <Field label="Student" mb={0}><select value={selStudent} onChange={e=>setSelStudent(e.target.value)} style={S.select}><option value="">— Select —</option>{students.filter(s=>s.active).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
+          <Field label="Class" mb={0}><select value={selClass} onChange={e=>setSelClass(e.target.value)} style={S.select}><option value="">— Select —</option>{classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
+          <Field label="Batch (optional)" mb={0}><select value={selBatch} onChange={e=>setSelBatch(e.target.value)} style={S.select}><option value="">— None —</option>{batches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></Field>
+          <button onClick={assignStudentClass} style={{...S.btnPrimary,padding:"10px 16px"}}>Assign</button>
+        </div>
+      </div>
+      <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+        <table><thead><tr>{["Student","Class","Batch","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{studentClassMaps.length===0&&<tr><td colSpan={4} style={{...S.td,textAlign:"center",padding:24,color:C.textLight}}>No assignments yet</td></tr>}
+            {studentClassMaps.map(m=><tr key={m.id}>
+              <td style={S.td}>{m.students?.name||"—"}</td>
+              <td style={S.td}>{m.classes?.name||"—"}</td>
+              <td style={S.td}>{m.batches?.name||"—"}</td>
+              <td style={S.td}>{isSA&&<button onClick={()=>removeMap("/api/student-class-map",m.id)} style={{...S.btnDanger,padding:"5px 10px",fontSize:"0.75rem"}}>Remove</button>}</td>
+            </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </div>}
+
+    {!err&&subTab==="studentSubject"&&<div>
+      <div style={S.card}>
+        <ST title="Naya Assignment"/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
+          <Field label="Student" mb={0}><select value={selStudent} onChange={e=>setSelStudent(e.target.value)} style={S.select}><option value="">— Select —</option>{students.filter(s=>s.active).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
+          <Field label="Subject" mb={0}><select value={selSubject} onChange={e=>setSelSubject(e.target.value)} style={S.select}><option value="">— Select —</option>{subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
+          <Field label="Class (optional)" mb={0}><select value={selClass} onChange={e=>setSelClass(e.target.value)} style={S.select}><option value="">— None —</option>{classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
+          <button onClick={assignStudentSubject} style={{...S.btnPrimary,padding:"10px 16px"}}>Assign</button>
+        </div>
+      </div>
+      <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+        <table><thead><tr>{["Student","Subject","Class","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{studentSubjectMaps.length===0&&<tr><td colSpan={4} style={{...S.td,textAlign:"center",padding:24,color:C.textLight}}>No assignments yet</td></tr>}
+            {studentSubjectMaps.map(m=><tr key={m.id}>
+              <td style={S.td}>{m.students?.name||"—"}</td>
+              <td style={S.td}>{m.subjects_master?.name||"—"}</td>
+              <td style={S.td}>{m.classes?.name||"—"}</td>
+              <td style={S.td}>{isSA&&<button onClick={()=>removeMap("/api/student-subject-map",m.id)} style={{...S.btnDanger,padding:"5px 10px",fontSize:"0.75rem"}}>Remove</button>}</td>
+            </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </div>}
+
+    {!err&&subTab==="teacher"&&<div>
+      <div style={S.card}>
+        <ST title="Naya Assignment"/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
+          <Field label="Teacher" mb={0}><select value={selTeacher} onChange={e=>setSelTeacher(e.target.value)} style={S.select}><option value="">— Select —</option>{teachers.filter(t=>t.active).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></Field>
+          <Field label="Class" mb={0}><select value={selClass} onChange={e=>setSelClass(e.target.value)} style={S.select}><option value="">— Select —</option>{classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
+          <Field label="Subject" mb={0}><select value={selSubject} onChange={e=>setSelSubject(e.target.value)} style={S.select}><option value="">— Select —</option>{subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
+          <button onClick={assignTeacher} style={{...S.btnPrimary,padding:"10px 16px"}}>Assign</button>
+        </div>
+      </div>
+      <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+        <table><thead><tr>{["Teacher","Class","Subject","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{teacherMaps.length===0&&<tr><td colSpan={4} style={{...S.td,textAlign:"center",padding:24,color:C.textLight}}>No assignments yet</td></tr>}
+            {teacherMaps.map(m=><tr key={m.id}>
+              <td style={S.td}>{m.teachers?.name||"—"}</td>
+              <td style={S.td}>{m.classes?.name||"—"}</td>
+              <td style={S.td}>{m.subjects_master?.name||"—"}</td>
+              <td style={S.td}>{isSA&&<button onClick={()=>removeMap("/api/teacher-assignments",m.id)} style={{...S.btnDanger,padding:"5px 10px",fontSize:"0.75rem"}}>Remove</button>}</td>
+            </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </div>}
+  </div>;
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// PREVIOUS ARREARS + CHALLAN HISTORY
+// Previous Arrears rule (client ki requirement, field naam same rakha):
+//   Har month ka discount/shortfall agle month "Previous Arrears" mein
+//   CUMULATIVE add hota rehta hai — kabhi reset nahi hota (session end
+//   tak). Ye maujooda fees data (student.fees[year-month].discount) se
+//   hi calculate hota hai — koi purana data nahi badalta, sirf padha
+//   jata hai.
+// ══════════════════════════════════════════════════════════════════
+function computePreviousArrears(student){
+  const entries=Object.entries(student.fees||{})
+    .map(([k,f])=>{ const[y,m]=k.split("-").map(Number); return{year:y,month:m,key:k,...f}; })
+    .sort((a,b)=> a.year-b.year || a.month-b.month );
+
+  let running=0;
+  return entries.map(e=>{
+    const shortfall=Number(e.discount||0); // client rule: discount = monthly shortfall
+    running+=shortfall;
+    return{
+      year:e.year, month:e.month,
+      totalFee:e.totalFee||0, discount:shortfall, paid:e.paid||0,
+      monthlyShortfall:shortfall, previousArrears:running, status:e.status||"unpaid"
+    };
+  });
+}
+
+function ArrearsAndChallanHistory({students, settings, showToast, isSA}){
+  const[subTab,setSubTab]=useState("arrears");
+  const[selStudent,setSelStudent]=useState("");
+  const[challanLog,setChallanLog]=useState(()=>loadLS("aa_challan_log",[]));
+  const[syncing,setSyncing]=useState(false);
+  const active=students.filter(s=>s.active);
+
+  const arrearsRows=selStudent ? computePreviousArrears(active.find(s=>s.id===selStudent)||{fees:{}}) : [];
+  const currentArrears=arrearsRows.length ? arrearsRows[arrearsRows.length-1].previousArrears : 0;
+
+  // Academy-wide summary: current Previous Arrears for every active student
+  const allStudentArrears=active.map(s=>{
+    const rows=computePreviousArrears(s);
+    const latest=rows.length?rows[rows.length-1].previousArrears:0;
+    return{ id:s.id, name:s.name, class:s.class, previousArrears:latest };
+  }).filter(r=>r.previousArrears>0).sort((a,b)=>b.previousArrears-a.previousArrears);
+
+  async function syncToBackend(){
+    if(!selStudent){ showToast("Select a student first","error"); return; }
+    setSyncing(true);
+    try{
+      const months=arrearsRows.map(r=>({year:r.year,month:r.month,monthly_shortfall:r.monthlyShortfall}));
+      await apiPost("/api/previous-arrears/recalculate",{ student_id:selStudent, months });
+      showToast("Previous Arrears synced to backend!");
+    }catch(e){ showToast(e.message,"error"); }
+    setSyncing(false);
+  }
+
+  function printArrearsReport(){
+    const s=active.find(x=>x.id===selStudent);
+    if(!s) return;
+    const headers=["Month","Total Fee","Discount (Shortfall)","Paid","Previous Arrears (Cumulative)","Status"];
+    const rows=arrearsRows.map(r=>[MONTHS[r.month]+" "+r.year, "Rs."+fmt(r.totalFee), "Rs."+fmt(r.discount), "Rs."+fmt(r.paid), "Rs."+fmt(r.previousArrears), r.status]);
+    printReportPDF(`Previous Arrears Report — ${s.name}`, headers, rows,
+      [["Current Previous Arrears","Rs."+fmt(currentArrears),"red"]], settings);
+  }
+
+  function exportArrearsExcel(){
+    const s=active.find(x=>x.id===selStudent);
+    if(!s) return;
+    exportToExcel(arrearsRows.map(r=>({
+      Month:MONTHS[r.month]+" "+r.year, "Total Fee":r.totalFee, Discount:r.discount,
+      Paid:r.paid, "Previous Arrears (Cumulative)":r.previousArrears, Status:r.status
+    })), `Previous_Arrears_${s.name}`);
+  }
+
+  function printChallanHistoryPDF(){
+    const headers=["Date","Student","Class","Month","Challan No","Total Payable","Type","Status"];
+    const rows=challanLog.slice(0,300).map(l=>[new Date(l.generatedAt).toLocaleDateString(),l.studentName,l.class,MONTHS[l.month]+" "+l.year,l.challanNo||"—","Rs."+fmt(l.totalPayable),l.generatedType,l.status]);
+    printReportPDF("Challan History Report", headers, rows, [], settings);
+  }
+
+  function exportChallanHistoryExcel(){
+    exportToExcel(challanLog.map(l=>({
+      Date:new Date(l.generatedAt).toLocaleString(), Student:l.studentName, Class:l.class,
+      Month:MONTHS[l.month]+" "+l.year, "Challan No":l.challanNo||"—",
+      "Total Fee":l.totalFee, Discount:l.discount, Arrears:l.arrears,
+      "Total Payable":l.totalPayable, Type:l.generatedType, Status:l.status
+    })), "Challan_History");
+  }
+
+  return <div>
+    <div style={{display:"flex",background:C.bg,borderRadius:9,border:`1px solid ${C.border}`,overflow:"hidden",marginBottom:16}}>
+      {[["arrears","Previous Arrears"],["history","Challan History"]].map(([id,label])=>
+        <button key={id} onClick={()=>setSubTab(id)} style={{padding:"9px 16px",background:subTab===id?C.navy:"transparent",color:subTab===id?C.white:C.text,border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.85rem",fontFamily:"inherit"}}>{label}</button>)}
+    </div>
+
+    {subTab==="arrears"&&<div>
+      <div style={{...S.card,background:C.blueBg,borderLeft:`4px solid ${C.blue}`,marginBottom:14}}>
+        <div style={{fontWeight:700,color:C.blue,fontSize:"0.85rem",marginBottom:4}}>ℹ️ Previous Arrears Kaise Calculate Hota Hai</div>
+        <div style={{fontSize:"0.8rem",color:C.textMid}}>Har month ka discount agle month "Previous Arrears" mein <b>cumulative</b> jama hota hai — kabhi reset nahi hota. Example: Month 1 discount Rs.3,000 → Arrears Rs.3,000. Month 2 discount Rs.3,000 → Arrears Rs.6,000. Month 3 → Rs.9,000.</div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:14,marginBottom:14}}>
+        <select value={selStudent} onChange={e=>setSelStudent(e.target.value)} style={S.select}>
+          <option value="">— Student select karo Previous Arrears history dekhne ke liye —</option>
+          {active.map(s=><option key={s.id} value={s.id}>{s.name} ({s.class})</option>)}
+        </select>
+        {selStudent&&<div style={{display:"flex",gap:8}}>
+          <button onClick={exportArrearsExcel} style={{...S.btnGhost,flex:1,fontSize:"0.8rem"}}>📥 Excel</button>
+          <button onClick={printArrearsReport} style={{...S.btnGold,flex:1,fontSize:"0.8rem"}}>🖨 Print PDF</button>
+        </div>}
+      </div>
+
+      {selStudent&&<div>
+        <div style={{...S.card,background:C.navy,color:C.white,display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontWeight:800}}>{active.find(s=>s.id===selStudent)?.name}</div>
+          <div style={{textAlign:"right"}}>
+            <div style={{opacity:0.6,fontSize:"0.7rem",textTransform:"uppercase"}}>Current Previous Arrears</div>
+            <div style={{fontWeight:900,fontSize:"1.4rem",color:"#ff9999"}}>Rs. {fmt(currentArrears)}</div>
+          </div>
+        </div>
+        <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)",marginBottom:14}}>
+          <table><thead><tr>{["Month","Total Fee","Discount","Paid","Previous Arrears (Cumulative)","Status"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+            <tbody>
+              {arrearsRows.length===0&&<tr><td colSpan={6} style={{...S.td,textAlign:"center",padding:24,color:C.textLight}}>No fee records yet</td></tr>}
+              {arrearsRows.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+                <td style={S.td}><span style={{fontWeight:700}}>{MONTHS[r.month]} {r.year}</span></td>
+                <td style={S.td}>Rs. {fmt(r.totalFee)}</td>
+                <td style={S.td}>{r.discount>0?<span style={{color:C.green}}>Rs. {fmt(r.discount)}</span>:"—"}</td>
+                <td style={S.td}><span style={{color:C.green,fontWeight:700}}>Rs. {fmt(r.paid)}</span></td>
+                <td style={S.td}><span style={{fontWeight:900,color:r.previousArrears>0?C.red:C.textLight}}>Rs. {fmt(r.previousArrears)}</span></td>
+                <td style={S.td}><Badge status={r.status}/></td>
+              </tr>)}
+            </tbody>
+          </table>
+        </div>
+        <button onClick={syncToBackend} disabled={syncing} style={{...S.btnPrimary,opacity:syncing?0.7:1}}>{syncing?"Syncing...":"Sync to Backend (optional)"}</button>
+      </div>}
+
+      {!selStudent&&<div>
+        <ST title="Academy-wide — Students with Previous Arrears"/>
+        <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+          <table><thead><tr>{["Student","Class","Current Previous Arrears"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+            <tbody>
+              {allStudentArrears.length===0&&<tr><td colSpan={3} style={{...S.td,textAlign:"center",padding:24,color:C.green,fontWeight:700}}>✅ Koi bhi student pe Previous Arrears nahi hai</td></tr>}
+              {allStudentArrears.map(r=><tr key={r.id} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+                <td style={S.td}><span style={{fontWeight:700}}>{r.name}</span></td>
+                <td style={S.td}>{r.class}</td>
+                <td style={S.td}><span style={{fontWeight:900,color:C.red}}>Rs. {fmt(r.previousArrears)}</span></td>
+              </tr>)}
+            </tbody>
+          </table>
+        </div>
+      </div>}
+    </div>}
+
+    {subTab==="history"&&<div>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:14}}>
+        <button onClick={exportChallanHistoryExcel} style={{...S.btnGhost,fontSize:"0.82rem"}}>📥 Excel</button>
+        <button onClick={printChallanHistoryPDF} style={{...S.btnGold,fontSize:"0.82rem"}}>🖨 Print PDF</button>
+        {isSA&&<button onClick={()=>{ if(window.confirm("Clear all challan history? This cannot be undone.")){saveLS("aa_challan_log",[]);setChallanLog([]);showToast("Challan history cleared");} }} style={{...S.btnDanger,fontSize:"0.82rem"}}>Clear History</button>}
+      </div>
+      <div style={{...S.card,background:C.blueBg,borderLeft:`4px solid ${C.blue}`,marginBottom:14}}>
+        <div style={{fontSize:"0.8rem",color:C.textMid}}>Yahan har challan jo <b>ab se</b> print kiya jayega, permanently log ho jayega — chahe manual ho ya auto. Purana print history is se pehle ka nahi hoga.</div>
+      </div>
+      <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+        <table><thead><tr>{["Date","Student","Class","Month","Challan No","Total Payable","Type","Status"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>
+            {challanLog.length===0&&<tr><td colSpan={8} style={{...S.td,textAlign:"center",padding:32,color:C.textLight}}>Abhi tak koi challan print nahi hua</td></tr>}
+            {challanLog.slice(0,200).map(l=><tr key={l.id} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+              <td style={S.td}>{new Date(l.generatedAt).toLocaleDateString()}</td>
+              <td style={S.td}><span style={{fontWeight:700}}>{l.studentName}</span></td>
+              <td style={S.td}>{l.class}</td>
+              <td style={S.td}>{MONTHS[l.month]} {l.year}</td>
+              <td style={S.td}><span style={{fontFamily:"monospace"}}>{l.challanNo||"—"}</span></td>
+              <td style={S.td}><span style={{fontWeight:700}}>Rs. {fmt(l.totalPayable)}</span></td>
+              <td style={S.td}><span style={S.badge(l.generatedType==="auto"?C.blue:C.navy,l.generatedType==="auto"?C.blueBg:C.bg)}>{l.generatedType}</span></td>
+              <td style={S.td}><Badge status={l.status}/></td>
+            </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </div>}
+  </div>;
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// PERIOD REPORTS PANEL — Daily/Weekly/Monthly/Class-wise/Subject-wise/
+// Late Student/Late Teacher/Missed Class reports, pulled from the
+// new backend period_attendance + period_teacher_attendance tables
+// (populated by the K50 bridge v2 + timetable_periods).
+// ══════════════════════════════════════════════════════════════════
+function PeriodReportsPanel({settings}){
+  const[reportType,setReportType]=useState("daily");
+  const[dateFrom,setDateFrom]=useState(new Date().toISOString().split("T")[0]);
+  const[dateTo,setDateTo]=useState(new Date().toISOString().split("T")[0]);
+  const[records,setRecords]=useState([]);
+  const[teacherRecords,setTeacherRecords]=useState([]);
+  const[classes,setClasses]=useState([]);
+  const[loading,setLoading]=useState(false);
+  const[err,setErr]=useState("");
+
+  const REPORT_TYPES=[
+    ["daily","Daily Report"],["weekly","Weekly Report"],["monthly","Monthly Report"],
+    ["classwise","Class-wise Report"],["subjectwise","Subject-wise Report"],
+    ["lateStudent","Late Students"],["lateTeacher","Late Teachers"],
+    ["missedClass","Missed Class Report"],
+  ];
+
+  function setPreset(type){
+    const today=new Date();
+    if(type==="daily"){ const d=today.toISOString().split("T")[0]; setDateFrom(d); setDateTo(d); }
+    if(type==="weekly"){ const start=new Date(today); start.setDate(today.getDate()-today.getDay()); setDateFrom(start.toISOString().split("T")[0]); setDateTo(today.toISOString().split("T")[0]); }
+    if(type==="monthly"){ const start=new Date(today.getFullYear(),today.getMonth(),1); setDateFrom(start.toISOString().split("T")[0]); setDateTo(today.toISOString().split("T")[0]); }
+  }
+
+  async function load(){
+    setLoading(true); setErr("");
+    try{
+      const[sData,tData,cData]=await Promise.all([
+        apiGet(`/api/period-attendance?from_date=${dateFrom}&to_date=${dateTo}`),
+        apiGet(`/api/period-teacher-attendance?from_date=${dateFrom}&to_date=${dateTo}`),
+        apiGet('/api/classes-master'),
+      ]);
+      setRecords(Array.isArray(sData)?sData:[]);
+      setTeacherRecords(Array.isArray(tData)?tData:[]);
+      setClasses(Array.isArray(cData)?cData:[]);
+    }catch(e){ setErr(e.message); }
+    setLoading(false);
+  }
+  useEffect(()=>{ load(); },[dateFrom,dateTo]);
+
+  // ── Build each report's rows ──────────────────────────────────────
+  function buildDailyWeeklyMonthly(){
+    return records.map(r=>[
+      r.date, r.students?.name||"—", r.classes?.name||"—", r.subjects_master?.name||"—",
+      r.in_time||"—", r.out_time||"—", r.duration_minutes?r.duration_minutes+" min":"—",
+      (r.status||"—").toUpperCase()
+    ]);
+  }
+  function buildClasswise(){
+    const grouped={};
+    records.forEach(r=>{
+      const cls=r.classes?.name||"Unknown";
+      if(!grouped[cls]) grouped[cls]={present:0,late:0,absent:0,total:0};
+      grouped[cls].total++;
+      if(r.status==="present") grouped[cls].present++;
+      else if(r.status==="late") grouped[cls].late++;
+      else grouped[cls].absent++;
+    });
+    return Object.entries(grouped).map(([cls,g])=>[cls,g.present,g.late,g.absent,g.total,g.total>0?Math.round(((g.present+g.late)/g.total)*100)+"%":"0%"]);
+  }
+  function buildSubjectwise(){
+    const grouped={};
+    records.forEach(r=>{
+      const sub=r.subjects_master?.name||"Unknown";
+      if(!grouped[sub]) grouped[sub]={present:0,late:0,absent:0,total:0};
+      grouped[sub].total++;
+      if(r.status==="present") grouped[sub].present++;
+      else if(r.status==="late") grouped[sub].late++;
+      else grouped[sub].absent++;
+    });
+    return Object.entries(grouped).map(([sub,g])=>[sub,g.present,g.late,g.absent,g.total,g.total>0?Math.round(((g.present+g.late)/g.total)*100)+"%":"0%"]);
+  }
+  function buildLateStudents(){
+    return records.filter(r=>r.status==="late").map(r=>[r.date,r.students?.name||"—",r.classes?.name||"—",r.subjects_master?.name||"—",r.in_time||"—"]);
+  }
+  function buildLateTeachers(){
+    return teacherRecords.filter(r=>r.status==="late").map(r=>[r.date,r.teachers?.name||"—",r.classes?.name||"—",r.subjects_master?.name||"—",r.in_time||"—"]);
+  }
+  function buildMissedClass(){
+    // Teacher periods where NO period_teacher_attendance record exists at all for that date+period
+    // (approximation using absent status plus records with no in_time)
+    return teacherRecords.filter(r=>r.status==="absent"||!r.in_time).map(r=>[r.date,r.teachers?.name||"—",r.classes?.name||"—",r.subjects_master?.name||"—","Missed"]);
+  }
+
+  const CONFIG={
+    daily:      { title:"Daily Attendance Report", headers:["Date","Student","Class","Subject","In","Out","Duration","Status"], build:buildDailyWeeklyMonthly },
+    weekly:     { title:"Weekly Attendance Report", headers:["Date","Student","Class","Subject","In","Out","Duration","Status"], build:buildDailyWeeklyMonthly },
+    monthly:    { title:"Monthly Attendance Report", headers:["Date","Student","Class","Subject","In","Out","Duration","Status"], build:buildDailyWeeklyMonthly },
+    classwise:  { title:"Class-wise Attendance Report", headers:["Class","Present","Late","Absent","Total","Rate"], build:buildClasswise },
+    subjectwise:{ title:"Subject-wise Attendance Report", headers:["Subject","Present","Late","Absent","Total","Rate"], build:buildSubjectwise },
+    lateStudent:{ title:"Late Students Report", headers:["Date","Student","Class","Subject","In Time"], build:buildLateStudents },
+    lateTeacher:{ title:"Late Teachers Report", headers:["Date","Teacher","Class","Subject","In Time"], build:buildLateTeachers },
+    missedClass:{ title:"Missed Class Report (Teacher)", headers:["Date","Teacher","Class","Subject","Status"], build:buildMissedClass },
+  };
+
+  const active=CONFIG[reportType];
+  const rows=active.build();
+
+  function doPrint(){ printReportPDF(active.title+` (${dateFrom} to ${dateTo})`, active.headers, rows, [], settings); }
+  function doExcel(){
+    const data=rows.map(r=>{ const o={}; active.headers.forEach((h,i)=>o[h]=r[i]); return o; });
+    exportToExcel(data, active.title.replace(/\s+/g,"_")+`_${dateFrom}_to_${dateTo}`);
+  }
+
+  return <div>
+    <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+      {REPORT_TYPES.map(([id,label])=><button key={id} onClick={()=>{setReportType(id);setPreset(id);}}
+        style={{padding:"7px 12px",background:reportType===id?C.navy:C.bg,color:reportType===id?C.white:C.text,border:`1px solid ${C.border}`,borderRadius:7,cursor:"pointer",fontWeight:600,fontSize:"0.78rem",fontFamily:"inherit"}}>{label}</button>)}
+    </div>
+
+    <div style={{display:"flex",gap:8,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
+      <span style={{fontSize:"0.8rem",color:C.textLight}}>From</span>
+      <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} style={{...S.input,width:"auto"}}/>
+      <span style={{fontSize:"0.8rem",color:C.textLight}}>To</span>
+      <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} style={{...S.input,width:"auto"}}/>
+      <div style={{display:"flex",gap:6,marginLeft:"auto"}}>
+        <button onClick={doExcel} style={{...S.btnGhost,fontSize:"0.8rem"}}>📥 Excel</button>
+        <button onClick={doPrint} style={{...S.btnGold,fontSize:"0.8rem"}}>🖨 Print PDF</button>
+      </div>
+    </div>
+
+    {err&&<div style={{background:C.redBg,color:C.red,padding:"10px 14px",borderRadius:8,fontSize:"0.82rem",marginBottom:14}}>{err}
+      <div style={{marginTop:4}}>Ye reports naye Timetable/Period Attendance system se aati hain. Settings → Backend Connection mein Railway URL set karo, phir Academic Setup + Assignments + Timetable complete karo, aur K50 bridge v2 chalao.</div>
+    </div>}
+    {loading&&<div style={{color:C.textLight,padding:14}}>Loading...</div>}
+
+    {!loading&&!err&&<div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <table><thead><tr>{active.headers.map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <tbody>
+          {rows.length===0&&<tr><td colSpan={active.headers.length} style={{...S.td,textAlign:"center",padding:32,color:C.textLight}}>No data for this range yet</td></tr>}
+          {rows.map((r,i)=><tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            {r.map((c,j)=><td key={j} style={S.td}>{String(c)}</td>)}
+          </tr>)}
+        </tbody>
+      </table>
+    </div>}
+  </div>;
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// TIMETABLE PERIODS (backend-driven) — ye woh table hai jise K50
+// bridge script asal mein match karta hai fingerprint scan pe.
+// Har period: Class + Subject + Teacher + Day + Start + End + Late Rule
+// ══════════════════════════════════════════════════════════════════
+function TimetablePeriodsPanel({showToast, isSA}){
+  const DAYS_ALL=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const[periods,setPeriods]=useState([]);
+  const[classes,setClasses]=useState([]);
+  const[subjects,setSubjects]=useState([]);
+  const[teachers,setTeachers]=useState([]);
+  const[selDay,setSelDay]=useState(DAYS_ALL[new Date().getDay()]);
+  const[modal,setModal]=useState(null);
+  const[form,setForm]=useState(null);
+  const[err,setErr]=useState("");
+
+  async function loadMasters(){
+    try{
+      const[c,s]=await Promise.all([apiGet("/api/classes-master"),apiGet("/api/subjects-master")]);
+      setClasses(Array.isArray(c)?c:[]); setSubjects(Array.isArray(s)?s:[]);
+      const t=loadLS("aa_teachers",[]);
+      setTeachers(Array.isArray(t)?t.filter(x=>x.active):[]);
+    }catch(e){ setErr(e.message); }
+  }
+  async function loadPeriods(){
+    try{
+      const d=await apiGet("/api/timetable-periods?day="+selDay);
+      setPeriods(Array.isArray(d)?d:[]);
+    }catch(e){ setErr(e.message); }
+  }
+  useEffect(()=>{ loadMasters(); },[]);
+  useEffect(()=>{ loadPeriods(); },[selDay]);
+
+  function openAdd(){
+    setForm({ class_id:"", subject_id:"", teacher_id:"", day:selDay, start_time:"08:00", end_time:"08:45", late_minutes:15 });
+    setModal("add");
+  }
+  function openEdit(p){ setForm({...p}); setModal("edit"); }
+
+  async function save(){
+    if(!form.class_id||!form.start_time||!form.end_time){ showToast("Class, start & end time required","error"); return; }
+    try{
+      if(modal==="add") await apiPost("/api/timetable-periods", form);
+      else await apiPut("/api/timetable-periods/"+form.id, form);
+      showToast("Period saved!"); setModal(null); setForm(null); loadPeriods();
+    }catch(e){ showToast(e.message,"error"); }
+  }
+  async function remove(id){
+    try{ await apiDelete("/api/timetable-periods/"+id); showToast("Removed"); loadPeriods(); }
+    catch(e){ showToast(e.message,"error"); }
+  }
+
+  return <div>
+    {err&&<div style={{background:C.redBg,color:C.red,padding:"10px 14px",borderRadius:8,fontSize:"0.82rem",marginBottom:14}}>{err}
+      <div style={{marginTop:4}}>Pehle Settings → Backend Connection mein Railway URL set karo, aur Classes/Subjects add karo.</div>
+    </div>}
+
+    <div style={{...S.card,background:C.blueBg,borderLeft:`4px solid ${C.blue}`,marginBottom:14}}>
+      <div style={{fontWeight:700,color:C.blue,fontSize:"0.85rem",marginBottom:4}}>ℹ️ Ye Kya Hai</div>
+      <div style={{fontSize:"0.8rem",color:C.textMid}}>Ye periods hi K50 fingerprint scan ke saath match hote hain. Example: 3:00–3:45 PM English Class → student is waqt fingerprint lagaye to attendance sirf English mein save hogi. Agle period 3:45–4:30 Physics ke liye dobara scan alag record banayega.</div>
+    </div>
+
+    <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+      <div style={{display:"flex",background:C.bg,borderRadius:9,border:`1px solid ${C.border}`,overflow:"hidden"}}>
+        {DAYS_ALL.map(d=><button key={d} onClick={()=>setSelDay(d)} style={{padding:"8px 11px",background:selDay===d?C.navy:"transparent",color:selDay===d?C.white:C.text,border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.8rem",fontFamily:"inherit"}}>{d.slice(0,3)}</button>)}
+      </div>
+      {isSA&&<button onClick={openAdd} style={{...S.btnPrimary,padding:"9px 16px",fontSize:"0.85rem"}}>+ Add Period</button>}
+    </div>
+
+    <div style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+      <table><thead><tr>{["Class","Subject","Teacher","Start","End","Late Rule","Actions"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <tbody>
+          {periods.length===0&&<tr><td colSpan={7} style={{...S.td,textAlign:"center",padding:32,color:C.textLight}}>No periods on {selDay} yet</td></tr>}
+          {periods.sort((a,b)=>a.start_time.localeCompare(b.start_time)).map(p=><tr key={p.id} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            <td style={S.td}><span style={{fontWeight:700}}>{p.classes?.name||"—"}</span></td>
+            <td style={S.td}>{p.subjects_master?.name||"—"}</td>
+            <td style={S.td}>{p.teachers?.name||"—"}</td>
+            <td style={S.td}><b>{p.start_time}</b></td>
+            <td style={S.td}><b>{p.end_time}</b></td>
+            <td style={S.td}>{p.late_minutes||15} min</td>
+            <td style={S.td}>{isSA&&<div style={{display:"flex",gap:5}}>
+              <button onClick={()=>openEdit(p)} style={{...S.btnGhost,padding:"5px 10px",fontSize:"0.75rem"}}>Edit</button>
+              <button onClick={()=>remove(p.id)} style={{...S.btnDanger,padding:"5px 10px",fontSize:"0.75rem"}}>Remove</button>
+            </div>}</td>
+          </tr>)}
+        </tbody>
+      </table>
+    </div>
+
+    {(modal==="add"||modal==="edit")&&form&&<Modal title={modal==="add"?"Add Timetable Period":"Edit Period"} onClose={()=>{setModal(null);setForm(null);}} width={480}>
+      <G2>
+        <Field label="Class *"><select value={form.class_id} onChange={e=>setForm({...form,class_id:e.target.value})} style={S.select}><option value="">— Select —</option>{classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
+        <Field label="Subject"><select value={form.subject_id} onChange={e=>setForm({...form,subject_id:e.target.value})} style={S.select}><option value="">— None —</option>{subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
+      </G2>
+      <G2>
+        <Field label="Teacher"><select value={form.teacher_id} onChange={e=>setForm({...form,teacher_id:e.target.value})} style={S.select}><option value="">— None —</option>{teachers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></Field>
+        <Field label="Day"><select value={form.day} onChange={e=>setForm({...form,day:e.target.value})} style={S.select}>{DAYS_ALL.map(d=><option key={d}>{d}</option>)}</select></Field>
+      </G2>
+      <G2>
+        <Field label="Start Time"><input type="time" value={form.start_time} onChange={e=>setForm({...form,start_time:e.target.value})} style={S.input}/></Field>
+        <Field label="End Time"><input type="time" value={form.end_time} onChange={e=>setForm({...form,end_time:e.target.value})} style={S.input}/></Field>
+      </G2>
+      <Field label="Late After (minutes)"><input type="number" value={form.late_minutes} onChange={e=>setForm({...form,late_minutes:parseInt(e.target.value)||15})} style={S.input}/></Field>
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={save} style={{...S.btnPrimary,flex:1}}>Save Period</button>
+        <button onClick={()=>{setModal(null);setForm(null);}} style={{...S.btnGhost,flex:1}}>Cancel</button>
+      </div>
+    </Modal>}
+  </div>;
 }
 
 ReactDOM.render(<ErrorBoundary><App/></ErrorBoundary>, document.getElementById("root"));
